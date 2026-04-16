@@ -1,0 +1,13 @@
+node_modules
+**/node_modules
+**/dist
+**/.vite
+.git
+.github
+PROJECT_STATUS
+docs
+tests/golden/actual
+tests/golden/diff
+*.log
+.env
+.env.local

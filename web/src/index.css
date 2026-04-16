@@ -1,0 +1,104 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light — warm neutral with violet primary (v1 palette) */
+    --background: 240 30% 98%;
+    --foreground: 240 28% 14%;
+    --muted-foreground: 240 10% 48%;
+    --card: 0 0% 100%;
+    --sidebar: 240 25% 96%;
+    --sidebar-foreground: 240 28% 14%;
+    --primary: 262 83% 60%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 240 20% 93%;
+    --accent-foreground: 240 28% 18%;
+    --border: 240 15% 88%;
+    --input: 240 15% 88%;
+    --ring: 262 83% 60%;
+
+    --tile-violet-from: 262 80% 62%;
+    --tile-violet-to: 275 70% 58%;
+    --tile-emerald-from: 160 55% 42%;
+    --tile-emerald-to: 170 55% 38%;
+    --tile-amber-from: 30 80% 55%;
+    --tile-amber-to: 25 75% 50%;
+    --tile-rose-from: 345 70% 58%;
+    --tile-rose-to: 330 65% 54%;
+    --tile-sky-from: 205 75% 52%;
+    --tile-sky-to: 215 70% 48%;
+    --tile-purple-from: 262 83% 67%;
+    --tile-pink-from: 325 75% 62%;
+  }
+
+  .dark {
+    /* Dark — v1 palette: near-black violet tinted, signature purple primary */
+    --background: 240 35% 4%;
+    --foreground: 240 20% 87%;
+    --muted-foreground: 240 14% 43%;
+    --card: 240 22% 8%;
+    --sidebar: 240 32% 5%;
+    --sidebar-foreground: 240 20% 87%;
+    --primary: 262 83% 67%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 240 22% 14%;
+    --accent-foreground: 240 20% 90%;
+    --border: 240 20% 17%;
+    --input: 240 20% 20%;
+    --ring: 262 83% 67%;
+
+    --tile-violet-from: 262 83% 67%;
+    --tile-violet-to: 275 70% 65%;
+    --tile-emerald-from: 160 55% 48%;
+    --tile-emerald-to: 170 55% 42%;
+    --tile-amber-from: 30 80% 58%;
+    --tile-amber-to: 25 75% 54%;
+    --tile-rose-from: 345 70% 60%;
+    --tile-rose-to: 330 65% 58%;
+    --tile-sky-from: 205 75% 56%;
+    --tile-sky-to: 215 70% 52%;
+    --tile-purple-from: 262 83% 67%;
+    --tile-pink-from: 325 75% 62%;
+  }
+
+  html[dir='rtl'] body {
+    font-family: 'Cairo', 'Noto Sans Arabic', system-ui, sans-serif;
+  }
+  html[dir='ltr'] body {
+    font-family: 'Inter', 'SF Pro Display', system-ui, sans-serif;
+  }
+
+  body {
+    font-feature-settings: 'cv11', 'ss01';
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Purple-tinted ambient glow for dark mode */
+  .dark body {
+    background-image:
+      radial-gradient(at 15% 0%, hsl(262 70% 20% / 0.28), transparent 55%),
+      radial-gradient(at 85% 100%, hsl(275 60% 18% / 0.22), transparent 55%);
+    background-attachment: fixed;
+  }
+}
+
+@layer utilities {
+  .gradient-text {
+    background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--tile-pink-from)));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .glass {
+    background: hsl(var(--card) / 0.65);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  .glow-primary {
+    box-shadow: 0 0 28px hsl(var(--primary) / 0.22);
+  }
+}

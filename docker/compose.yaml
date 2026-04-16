@@ -1,0 +1,13 @@
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: nusuk-api:local
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      LOG_LEVEL: info
+    ports:
+      - "3001:3001"
+    restart: unless-stopped

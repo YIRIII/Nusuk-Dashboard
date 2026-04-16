@@ -1,0 +1,8 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./schemas" },
+    { "path": "./src" },
+    { "path": "./web" }
+  ]
+}
