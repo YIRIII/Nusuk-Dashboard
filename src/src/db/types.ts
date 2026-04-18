@@ -6,6 +6,7 @@ export type PostKind = 'tweet' | 'article' | 'unknown';
 export type MediaType = 'image' | 'video' | 'gif' | 'none';
 export type CaptureStage = 'fxtwitter' | 'oembed' | 'puppeteer_embed' | 'puppeteer_direct';
 export type PostOrigin = 'individual' | 'company';
+export type CompanyCategory = 'inner' | 'outer' | 'general' | 'other';
 
 export interface CompanyRow {
   id: string;
@@ -27,6 +28,7 @@ export interface PostRow {
   deleted_at: string | null;
   origin: PostOrigin;
   company_id: string | null;
+  company_category: CompanyCategory | null;
   reviewed: boolean;
   reviewed_at: string | null;
   title_override: string | null;

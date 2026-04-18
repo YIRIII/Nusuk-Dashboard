@@ -4,7 +4,8 @@ import { motion } from 'framer-motion';
 import { CheckCircle2, XCircle, RotateCw } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { staggerGrid, staggerItem } from '@/lib/motion';
-import { swrFetcher, type ActivityEntry, type ActivityType } from '@/lib/api';
+import { swrFetcher, type ActivityEntry, type ActivityType, type ListPostsResponse } from '@/lib/api';
+import { StagesChart } from '@/components/charts/StagesChart';
 
 const ICONS: Record<ActivityType, { Icon: typeof CheckCircle2; klass: string }> = {
   captured: { Icon: CheckCircle2, klass: 'text-emerald-500' },
@@ -19,6 +20,12 @@ export function MonitorPage() {
     swrFetcher,
     { revalidateOnFocus: false, refreshInterval: 30_000 },
   );
+  const { data: postsData } = useSWR<ListPostsResponse>(
+    '/api/posts?limit=500&sort=captured_desc',
+    swrFetcher,
+    { revalidateOnFocus: false },
+  );
+  const posts = postsData?.rows ?? [];
   const fmt = new Intl.DateTimeFormat(i18n.language === 'ar' ? 'ar-SA' : 'en-GB', {
     dateStyle: 'medium',
     timeStyle: 'short',
@@ -31,6 +38,8 @@ export function MonitorPage() {
         <h1 className="text-2xl font-bold">{t('nav.monitor')}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{t('monitor.hint')}</p>
       </div>
+
+      {posts.length > 0 && <StagesChart posts={posts} />}
 
       {isLoading && <p className="text-sm text-muted-foreground">{t('common.loading')}</p>}
       {error && (

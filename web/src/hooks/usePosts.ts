@@ -6,6 +6,7 @@ export interface PostsQuery {
   review?: 'all' | 'reviewed' | 'unreviewed';
   origin?: 'all' | 'individual' | 'company';
   company?: string;
+  category?: 'all' | 'inner' | 'outer' | 'general' | 'other' | 'unclassified';
   date_range?: 'all' | '24h' | '7d' | '30d';
   sort?: 'posted_desc' | 'posted_asc' | 'captured_desc';
   q?: string;

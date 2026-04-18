@@ -113,8 +113,11 @@ export function PostCard({
     >
       <Card
         className={cn(
-          'group relative h-full overflow-hidden flex flex-col border-border/80 bg-card transition-all',
-          'hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10',
+          'group relative h-full overflow-hidden flex flex-col border-border/80 bg-card transition-all border-s-[3px]',
+          post.origin === 'company'
+            ? 'border-s-amber-400/40 hover:border-s-amber-400/60 hover:shadow-amber-400/5'
+            : 'border-s-sky-400/40 hover:border-s-sky-400/60 hover:shadow-sky-400/5',
+          'hover:shadow-md',
           selected && 'ring-2 ring-primary/60 ring-offset-2 ring-offset-background',
         )}
       >
@@ -227,12 +230,40 @@ export function PostCard({
 
           <div className="mt-auto flex items-center justify-between pt-2 text-[11px] text-muted-foreground">
             <div className="flex items-center gap-1">
-              {post.origin === 'company' ? (
-                <Building2 className="h-3 w-3" />
-              ) : (
-                <User className="h-3 w-3" />
+              <span
+                className={cn(
+                  'inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-medium',
+                  post.origin === 'company'
+                    ? 'bg-amber-500/8 text-amber-500/90 border-amber-500/20 dark:text-amber-400/90'
+                    : 'bg-sky-500/8 text-sky-500/90 border-sky-500/20 dark:text-sky-400/90',
+                )}
+              >
+                {post.origin === 'company' ? (
+                  <Building2 className="h-3 w-3" />
+                ) : (
+                  <User className="h-3 w-3" />
+                )}
+                {t('posts.origin.' + post.origin)}
+              </span>
+              {post.origin === 'company' && (
+                <span
+                  className={cn(
+                    'inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-medium',
+                    post.company_category === 'inner' &&
+                      'bg-emerald-500/10 text-emerald-500/90 border-emerald-500/25 dark:text-emerald-400/90',
+                    post.company_category === 'outer' &&
+                      'bg-sky-500/10 text-sky-500/90 border-sky-500/25 dark:text-sky-400/90',
+                    post.company_category === 'general' &&
+                      'bg-violet-500/10 text-violet-500/90 border-violet-500/25 dark:text-violet-400/90',
+                    post.company_category === 'other' &&
+                      'bg-zinc-500/10 text-zinc-500/90 border-zinc-500/25 dark:text-zinc-400/90',
+                    !post.company_category &&
+                      'bg-red-500/8 text-red-500/80 border-red-500/20 dark:text-red-400/80',
+                  )}
+                >
+                  {t('posts.category.' + (post.company_category ?? 'unclassified'))}
+                </span>
               )}
-              {t('posts.origin.' + post.origin)}
             </div>
             <span>{postedAt ? fmt.format(new Date(postedAt)) : fmt.format(new Date(post.captured_at))}</span>
           </div>

@@ -5,7 +5,7 @@ import { Dialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/toast';
-import { api, type Post, type Origin } from '@/lib/api';
+import { api, type Post, type Origin, type CompanyCategory } from '@/lib/api';
 
 interface Props {
   post: Post | null;
@@ -19,12 +19,14 @@ export function QuickEditDialog({ post, onClose, onSaved }: Props) {
   const [saving, setSaving] = useState(false);
   const [titleOverride, setTitleOverride] = useState('');
   const [origin, setOrigin] = useState<Origin>('individual');
+  const [category, setCategory] = useState<CompanyCategory | null>(null);
   const [notes, setNotes] = useState('');
 
   useEffect(() => {
     if (!post) return;
     setTitleOverride(post.title_override ?? '');
     setOrigin(post.origin);
+    setCategory(post.company_category);
     setNotes(post.notes ?? '');
   }, [post]);
 
@@ -37,12 +39,19 @@ export function QuickEditDialog({ post, onClose, onSaved }: Props) {
     if (!post) return;
     setSaving(true);
     try {
-      await api.patchPost(post.id, {
+      const result = await api.patchPost(post.id, {
         origin,
+        company_category: origin === 'company' ? category : null,
         title_override: titleOverride.trim() ? titleOverride.trim() : null,
         notes: notes.trim() ? notes.trim() : null,
       });
-      toast(t('posts.toast.saved'), 'success');
+      const propagated = (result as unknown as { propagated?: number }).propagated ?? 0;
+      toast(
+        propagated > 0
+          ? t('quick_edit.toast.saved_with_propagate', { n: propagated })
+          : t('posts.toast.saved'),
+        'success',
+      );
       onSaved?.();
       onClose();
     } catch (err) {
@@ -106,6 +115,34 @@ export function QuickEditDialog({ post, onClose, onSaved }: Props) {
             ]}
           />
         </Field>
+
+        {origin === 'company' && (
+          <Field label={t('posts.filter_label.category')}>
+            <div className="flex flex-wrap gap-2">
+              {(['inner', 'outer', 'general', 'other'] as const).map((c) => {
+                const active = category === c;
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setCategory(active ? null : c)}
+                    className={
+                      'rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ' +
+                      (active
+                        ? 'bg-primary/15 text-primary border-primary/40'
+                        : 'bg-accent/40 text-muted-foreground border-border hover:bg-accent hover:text-foreground')
+                    }
+                  >
+                    {t('posts.category.' + c)}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              {t('quick_edit.category_hint')}
+            </p>
+          </Field>
+        )}
 
         <Field label={t('posts.edit.notes')}>
           <textarea

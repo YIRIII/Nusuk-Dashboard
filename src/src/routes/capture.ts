@@ -5,12 +5,14 @@ import { validateBody } from '../middleware/validate.js';
 import { CaptureService } from '../capture/puppeteer-service.js';
 import { runFallbackChain, FallbackChainError } from '../capture/fallback-chain.js';
 import { classifyUrl } from '../capture/url.js';
+import { classifyCompanyByHandle } from '../capture/classify.js';
 import {
   upsertPost,
   insertCapture,
   findLivePostByUrl,
   softDeletePost,
 } from '../db/posts.js';
+import { getSupabase } from '../db/supabase.js';
 import { uploadScreenshot, signedUrl } from '../db/storage.js';
 import { logger } from '../logger.js';
 import type { PostOrigin } from '../db/types.js';
@@ -55,6 +57,12 @@ async function captureOne(
 
     const { final } = await runFallbackChain(url, service, { traceId });
     const classified = classifyUrl(url);
+    const companyCategory = await classifyCompanyByHandle(getSupabase(), {
+      origin,
+      author_handle: final.author_handle,
+      author_name: final.author_name,
+      text: final.text,
+    });
     const { row: post, duplicate } = await upsertPost({
       url,
       kind: classified.kind,
@@ -67,6 +75,7 @@ async function captureOne(
       },
       origin,
       company_id: companyId,
+      company_category: companyCategory,
       posted_at: final.posted_at,
     });
 

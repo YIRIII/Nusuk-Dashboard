@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
@@ -8,6 +8,8 @@ import {
   X,
   User,
   Building2,
+  Tag,
+  ChevronUp,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/toast';
@@ -32,7 +34,21 @@ export function PostsBulkBar({ selectedIds, onClear, onChanged }: Props) {
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<Progress | null>(null);
+  const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const count = selectedIds.length;
+
+  // Close the category menu when clicking outside.
+  useEffect(() => {
+    if (!categoryMenuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setCategoryMenuOpen(false);
+      }
+    };
+    window.addEventListener('mousedown', handler);
+    return () => window.removeEventListener('mousedown', handler);
+  }, [categoryMenuOpen]);
 
   async function run(op: () => Promise<void>) {
     setBusy(true);
@@ -61,10 +77,30 @@ export function PostsBulkBar({ selectedIds, onClear, onChanged }: Props) {
     run(async () => {
       await Promise.all(
         selectedIds.map((id) =>
-          api.patchPost(id, { origin: 'individual', company_id: null }),
+          api.patchPost(id, {
+            origin: 'individual',
+            company_id: null,
+            company_category: null,
+          }),
         ),
       );
       toast(t('posts.bulk.toast.set_individual', { n: selectedIds.length }), 'success');
+    });
+
+  const setCategory = (cat: 'inner' | 'outer' | 'general' | 'other') =>
+    run(async () => {
+      await Promise.all(
+        selectedIds.map((id) =>
+          api.patchPost(id, { origin: 'company', company_category: cat }),
+        ),
+      );
+      toast(
+        t('posts.bulk.toast.set_category', {
+          n: selectedIds.length,
+          cat: t('posts.category.' + cat),
+        }),
+        'success',
+      );
     });
 
   // Sequential recapture so Chromium pool isn't overwhelmed. We capture the
@@ -207,6 +243,48 @@ export function PostsBulkBar({ selectedIds, onClear, onChanged }: Props) {
                 <User className="h-4 w-4 me-2" />
                 {t('posts.bulk.to_individual')}
               </Button>
+              <div className="relative" ref={menuRef}>
+                <Button
+                  size="sm"
+                  variant="soft"
+                  onClick={() => setCategoryMenuOpen((v) => !v)}
+                  disabled={busy}
+                >
+                  <Tag className="h-4 w-4 me-2" />
+                  {t('posts.bulk.set_category_btn_v2')}
+                  <ChevronUp
+                    className={
+                      'h-3 w-3 ms-1.5 transition-transform ' +
+                      (categoryMenuOpen ? '' : 'rotate-180')
+                    }
+                  />
+                </Button>
+                <AnimatePresence>
+                  {categoryMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 6, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 4, scale: 0.98 }}
+                      transition={{ duration: 0.14 }}
+                      className="absolute bottom-full mb-2 start-0 flex flex-col gap-1 rounded-xl border border-border bg-card p-1.5 shadow-2xl z-50 min-w-[10rem]"
+                    >
+                      {(['inner', 'outer', 'general', 'other'] as const).map((c) => (
+                        <button
+                          key={c}
+                          onClick={() => {
+                            setCategoryMenuOpen(false);
+                            setCategory(c);
+                          }}
+                          disabled={busy}
+                          className="rounded-md px-3 py-2 text-start text-sm font-medium text-foreground transition-colors hover:bg-accent"
+                        >
+                          {t('posts.category.' + c)}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
               <Button size="sm" variant="ghost" onClick={recapture} disabled={busy}>
                 <RotateCw className="h-4 w-4 me-2" />
                 {t('posts.bulk.recapture')}

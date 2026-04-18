@@ -9,6 +9,7 @@ import {
   softDeletePost,
   restorePost,
   listCompanies,
+  propagateCategoryByHandle,
 } from '../db/posts.js';
 import { getSupabase } from '../db/supabase.js';
 import { signedUrl, signedUrls } from '../db/storage.js';
@@ -39,6 +40,7 @@ export function postsRouter(): Router {
         review: q.review,
         origin: q.origin,
         ...(q.company ? { company_id: q.company } : {}),
+        category: q.category,
         date_range: q.date_range,
         sort: q.sort,
         ...(q.q ? { q: q.q } : {}),
@@ -108,8 +110,21 @@ export function postsRouter(): Router {
 
   router.patch('/posts/:id', validateBody(PostPatchSchema), async (req, res) => {
     try {
-      const row = await patchPost(req.params['id'] ?? '', req.body);
-      res.json({ trace_id: req.traceId, post: row });
+      const id = req.params['id'] ?? '';
+      const row = await patchPost(id, req.body);
+      // Learn-by-handle: if the analyst set a company_category, apply it to
+      // every other unclassified live post from the same author_handle.
+      let propagated = 0;
+      if (
+        req.body.company_category &&
+        row.origin === 'company'
+      ) {
+        const handle = (row.metadata as { author_handle?: string } | null)?.author_handle;
+        if (handle) {
+          propagated = await propagateCategoryByHandle(handle, req.body.company_category, id);
+        }
+      }
+      res.json({ trace_id: req.traceId, post: row, propagated });
     } catch (err) {
       logger.error({ err, trace_id: req.traceId }, 'patch post failed');
       res

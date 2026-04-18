@@ -1,10 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   AreaChart,
   Area,
-  BarChart,
-  Bar,
   PieChart,
   Pie,
   Cell,
@@ -42,9 +40,10 @@ const COLORS = {
 
 export function AnalyticsCharts({ posts }: Props) {
   const { t, i18n } = useTranslation();
+  const [dateAxis, setDateAxis] = useState<'posted' | 'captured'>('posted');
 
-  // ----- Daily captures (last 30 days) -----
-  const daily = useMemo(() => {
+  // ----- Daily series (last 30 days window — driven by dateAxis toggle) -----
+  const { daily, busiestLabel, busiestCount } = useMemo(() => {
     const buckets: Record<string, number> = {};
     const now = new Date();
     for (let i = DAYS - 1; i >= 0; i--) {
@@ -54,14 +53,29 @@ export function AnalyticsCharts({ posts }: Props) {
       buckets[key] = 0;
     }
     for (const p of posts) {
-      const key = p.captured_at.slice(0, 10);
+      const stamp = dateAxis === 'posted' ? p.posted_at ?? p.captured_at : p.captured_at;
+      if (!stamp) continue;
+      const key = stamp.slice(0, 10);
       if (key in buckets) buckets[key]! += 1;
     }
-    return Object.entries(buckets).map(([k, v]) => ({
-      day: shortDate(new Date(k), i18n.language),
-      captures: v,
-    }));
-  }, [posts, i18n.language]);
+    const entries = Object.entries(buckets);
+    let bestKey = entries[0]?.[0] ?? '';
+    let bestN = 0;
+    for (const [k, v] of entries) {
+      if (v > bestN) {
+        bestN = v;
+        bestKey = k;
+      }
+    }
+    return {
+      daily: entries.map(([k, v]) => ({
+        day: shortDate(new Date(k), i18n.language),
+        captures: v,
+      })),
+      busiestLabel: bestKey ? shortDate(new Date(bestKey), i18n.language) : '',
+      busiestCount: bestN,
+    };
+  }, [posts, i18n.language, dateAxis]);
 
   // ----- Origin split -----
   const originData = useMemo(() => {
@@ -93,39 +107,35 @@ export function AnalyticsCharts({ posts }: Props) {
     ];
   }, [posts, t]);
 
-  // ----- Capture stages -----
-  const stageData = useMemo(() => {
-    const buckets: Record<string, number> = {
-      fxtwitter: 0,
-      oembed: 0,
-      puppeteer_embed: 0,
-      puppeteer_direct: 0,
-    };
-    for (const p of posts) {
-      const s = p.latest_capture?.stage;
-      if (s && s in buckets) buckets[s]! += 1;
-    }
-    return [
-      { stage: 'FxTwitter', count: buckets['fxtwitter'] ?? 0, color: COLORS.primary },
-      { stage: 'oEmbed', count: buckets['oembed'] ?? 0, color: COLORS.emerald },
-      { stage: 'Puppeteer (embed)', count: buckets['puppeteer_embed'] ?? 0, color: COLORS.amber },
-      { stage: 'Puppeteer (direct)', count: buckets['puppeteer_direct'] ?? 0, color: COLORS.rose },
-    ];
-  }, [posts]);
 
-  // ----- Hour of day (when posts are captured) -----
-  const hourData = useMemo(() => {
-    const buckets = new Array(24).fill(0);
-    for (const p of posts) {
-      const h = new Date(p.captured_at).getHours();
-      buckets[h] += 1;
-    }
-    return buckets.map((v, h) => ({ hour: h + 'h', captures: v }));
-  }, [posts]);
+  const chartTitle =
+    dateAxis === 'posted'
+      ? t('dashboard.chart.daily_posted')
+      : t('dashboard.chart.daily_captured');
 
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-      <ChartCard title={t('dashboard.chart.daily')} className="lg:col-span-3">
+      <div className="lg:col-span-3 rounded-xl border border-border bg-card p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm font-semibold">{chartTitle}</p>
+          <div className="inline-flex rounded-lg border border-border bg-accent/40 p-0.5 text-[11px] font-medium">
+            {(['posted', 'captured'] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setDateAxis(v)}
+                className={
+                  'rounded-md px-3 py-1 transition-colors ' +
+                  (dateAxis === v
+                    ? 'bg-primary/15 text-primary'
+                    : 'text-muted-foreground hover:text-foreground')
+                }
+              >
+                {t('dashboard.chart.date_axis.' + v)}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="mt-4">
         <ResponsiveContainer width="100%" height={220}>
           <AreaChart data={daily} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
             <defs>
@@ -166,7 +176,16 @@ export function AnalyticsCharts({ posts }: Props) {
             />
           </AreaChart>
         </ResponsiveContainer>
-      </ChartCard>
+        </div>
+        {busiestCount > 0 && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            {t('dashboard.chart.busiest_day', {
+              day: busiestLabel,
+              n: busiestCount,
+            })}
+          </p>
+        )}
+      </div>
 
       <ChartCard title={t('dashboard.chart.origin')}>
         <Donut data={originData} />
@@ -180,71 +199,6 @@ export function AnalyticsCharts({ posts }: Props) {
         <Donut data={reviewData} />
       </ChartCard>
 
-      <ChartCard title={t('dashboard.chart.stages')} className="lg:col-span-2">
-        <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={stageData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-            <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} />
-            <XAxis
-              dataKey="stage"
-              stroke="hsl(var(--muted-foreground))"
-              fontSize={10}
-              tickLine={false}
-            />
-            <YAxis
-              stroke="hsl(var(--muted-foreground))"
-              fontSize={10}
-              tickLine={false}
-              axisLine={false}
-              allowDecimals={false}
-            />
-            <Tooltip
-              contentStyle={{
-                background: 'hsl(var(--card))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: 8,
-                fontSize: 12,
-              }}
-            />
-            <Bar dataKey="count" radius={[8, 8, 0, 0]}>
-              {stageData.map((s) => (
-                <Cell key={s.stage} fill={s.color} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </ChartCard>
-
-      <ChartCard title={t('dashboard.chart.hours')}>
-        <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={hourData} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
-            <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} />
-            <XAxis
-              dataKey="hour"
-              stroke="hsl(var(--muted-foreground))"
-              fontSize={9}
-              tickLine={false}
-              interval={3}
-            />
-            <YAxis
-              stroke="hsl(var(--muted-foreground))"
-              fontSize={10}
-              tickLine={false}
-              axisLine={false}
-              allowDecimals={false}
-              hide
-            />
-            <Tooltip
-              contentStyle={{
-                background: 'hsl(var(--card))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: 8,
-                fontSize: 12,
-              }}
-            />
-            <Bar dataKey="captures" fill={COLORS.purple} radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </ChartCard>
     </div>
   );
 }

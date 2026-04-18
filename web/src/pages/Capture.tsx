@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
 import { motion } from 'framer-motion';
@@ -11,12 +11,15 @@ import {
   CheckCircle2,
   XCircle,
   Copy,
+  RotateCw,
+  ClipboardPaste,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/toast';
 import { DuplicatePrompt, type DuplicateInfo } from '@/components/DuplicatePrompt';
 import { BatchDuplicateReview, type DuplicateRow } from '@/components/BatchDuplicateReview';
+import { GrabFromX } from '@/components/GrabFromX';
 import {
   api,
   swrFetcher,
@@ -93,7 +96,15 @@ export function CapturePage() {
 
   const [singleUrl, setSingleUrl] = useState('');
   const [batchText, setBatchText] = useState('');
+  const [lastBatchText, setLastBatchText] = useState<string | null>(null);
   const [origin, setOrigin] = useState<Origin>('individual');
+
+  // Persist last batch paste to localStorage so users can restore after
+  // submit clears the textarea or after closing the tab.
+  useEffect(() => {
+    const saved = localStorage.getItem('nusuk.lastBatchText');
+    if (saved && saved.length > 0) setLastBatchText(saved);
+  }, []);
 
   const [submitting, setSubmitting] = useState(false);
   const [recapturing, setRecapturing] = useState(false);
@@ -152,6 +163,9 @@ export function CapturePage() {
           });
         }
       } else {
+        // Save before any state changes so we can restore the exact paste.
+        localStorage.setItem('nusuk.lastBatchText', batchText);
+        setLastBatchText(batchText);
         const r = await api.batchCapture({ urls: batchUrls, origin });
         setBatchResult(r);
         const dups: DuplicateRow[] = r.results
@@ -234,6 +248,33 @@ export function CapturePage() {
     }
   }
 
+  async function retryFailed() {
+    if (!batchResult) return;
+    const failedUrls = batchResult.results
+      .filter((r) => r.status === 'failed')
+      .map((r) => r.url);
+    if (failedUrls.length === 0) return;
+    setRecapturing(true);
+    try {
+      const r = await api.batchCapture({ urls: failedUrls, origin });
+      toast(
+        t('capture.toast.batch_done', {
+          captured: r.summary.captured,
+          dup: r.summary.duplicate,
+          failed: r.summary.failed,
+        }),
+        r.summary.failed > 0 ? 'error' : 'success',
+        { durationMs: 7000 },
+      );
+      setBatchResult(r);
+      void refreshRecent();
+    } catch (err) {
+      toast((err as Error).message, 'error');
+    } finally {
+      setRecapturing(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -261,8 +302,20 @@ export function CapturePage() {
               dir="ltr"
               className="w-full rounded-lg border border-input bg-background p-3 font-mono text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
-            <div className="flex items-center justify-between">
-              <p className="text-xs text-muted-foreground">{t('capture.url_hint')}</p>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <p className="text-xs text-muted-foreground">{t('capture.url_hint')}</p>
+                {lastBatchText && lastBatchText !== batchText && (
+                  <button
+                    type="button"
+                    onClick={() => setBatchText(lastBatchText)}
+                    className="inline-flex items-center gap-1 rounded-md border border-border bg-accent/40 px-2 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  >
+                    <ClipboardPaste className="h-3 w-3" />
+                    {t('capture.restore_last')}
+                  </button>
+                )}
+              </div>
               <p
                 className={'text-xs font-medium ' + (overLimit ? 'text-red-500' : 'text-primary')}
               >
@@ -311,7 +364,7 @@ export function CapturePage() {
         )}
 
         {batchResult && (
-          <div className="rounded-lg border border-border bg-accent/30 p-4 text-sm">
+          <div className="rounded-lg border border-border bg-accent/30 p-4 text-sm space-y-3">
             <div className="flex flex-wrap items-center gap-4">
               <span className="flex items-center gap-1">
                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
@@ -329,6 +382,42 @@ export function CapturePage() {
                 {(batchResult.duration_ms / 1000).toFixed(1)}s
               </span>
             </div>
+
+            {batchResult.summary.failed > 0 && (
+              <div className="rounded-md border border-red-500/30 bg-red-500/5 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-red-500">
+                    {t('capture.batch.failed_header', { n: batchResult.summary.failed })}
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={recapturing}
+                    onClick={retryFailed}
+                  >
+                    <RotateCw className={'h-3.5 w-3.5 me-1.5 ' + (recapturing ? 'animate-spin' : '')} />
+                    {t('capture.batch.retry_failed')}
+                  </Button>
+                </div>
+                <ul className="space-y-1 text-xs">
+                  {batchResult.results
+                    .filter((r) => r.status === 'failed')
+                    .map((r, i) => (
+                      <li key={i} className="flex gap-2">
+                        <XCircle className="h-3 w-3 shrink-0 mt-0.5 text-red-500" />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-mono text-muted-foreground" dir="ltr">
+                            {r.url}
+                          </p>
+                          {r.error && (
+                            <p className="text-[10px] text-red-500/80">{r.error}</p>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
 
@@ -344,6 +433,8 @@ export function CapturePage() {
           />
         )}
       </div>
+
+      <GrabFromX />
 
       <div className="rounded-2xl border border-border bg-card p-6">
         <p className="text-sm font-semibold">{t('capture.recent')}</p>

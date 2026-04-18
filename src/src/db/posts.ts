@@ -1,4 +1,24 @@
 import { getSupabase } from './supabase.js';
+import type { CompanyCategory } from './types.js';
+
+/**
+ * Mirror of the Postgres `normalize_url()` function so we can look up posts
+ * by normalized form from the app layer. Must stay in sync with
+ * `supabase/migrations/20260415000001_init.sql`.
+ */
+export function normalizeUrl(raw: string): string {
+  if (!raw) return raw;
+  let s = raw.toLowerCase().trim();
+  s = s.replace(/#.*$/, ''); // strip fragment
+  s = s.replace(
+    /[?&](utm_[^=]+|gclid|fbclid|mc_[^=]+|ref|ref_src|ref_url|s|t)=[^&]*/g,
+    '',
+  );
+  s = s.replace(/\?&/g, '?');
+  s = s.replace(/[?&]+$/g, '');
+  s = s.replace(/\/+$/, ''); // trailing slash
+  return s;
+}
 import type {
   PostRow,
   CaptureRow,
@@ -16,6 +36,7 @@ export interface UpsertPostInput {
   parent_id?: string | null;
   origin?: PostOrigin;
   company_id?: string | null;
+  company_category?: CompanyCategory | null;
   posted_at?: string | null;
 }
 
@@ -34,7 +55,7 @@ export async function findLivePostByUrl(url: string): Promise<PostRow | null> {
   const res = await sb
     .from('posts')
     .select('*')
-    .eq('url', url)
+    .eq('normalized_url', normalizeUrl(url))
     .is('deleted_at', null)
     .limit(1)
     .maybeSingle<PostRow>();
@@ -57,6 +78,7 @@ export async function upsertPost(input: UpsertPostInput): Promise<UpsertResult> 
       parent_id: input.parent_id ?? null,
       origin: input.origin ?? 'individual',
       company_id: input.company_id ?? null,
+      company_category: input.company_category ?? null,
       posted_at: input.posted_at ?? null,
     })
     .select()
@@ -67,17 +89,20 @@ export async function upsertPost(input: UpsertPostInput): Promise<UpsertResult> 
   }
 
   // Unique violation on normalized_url → fetch existing, live (non-deleted) row.
+  // Look up by normalized_url because two input URLs can normalize to the same
+  // value (e.g., `?s=46` vs `?s=48` both strip to the same canonical form).
   if (insert.error?.code === '23505') {
     const existing = await sb
       .from('posts')
       .select('*')
-      .eq('url', input.url)
+      .eq('normalized_url', normalizeUrl(input.url))
       .is('deleted_at', null)
       .limit(1)
-      .single<PostRow>();
+      .maybeSingle<PostRow>();
     if (existing.error || !existing.data) {
       throw new Error(
-        'unique violation but no existing row found: ' + (existing.error?.message ?? 'unknown'),
+        'unique violation but no existing row found: ' +
+          (existing.error?.message ?? 'no match'),
       );
     }
     return { row: existing.data, duplicate: true };
@@ -134,6 +159,29 @@ export async function softDeletePost(id: string): Promise<void> {
   if (res.error) throw new Error('soft delete failed: ' + res.error.message);
 }
 
+/**
+ * Propagate a manually-set company_category to every OTHER live post with the
+ * same author_handle that is currently unclassified. Implements the
+ * "learn-by-handle" behaviour the analyst asked for.
+ */
+export async function propagateCategoryByHandle(
+  handle: string,
+  category: CompanyCategory,
+  excludePostId?: string,
+): Promise<number> {
+  const sb = getSupabase();
+  let q = sb
+    .from('posts')
+    .update({ company_category: category })
+    .filter('metadata->>author_handle', 'ilike', handle)
+    .is('company_category', null)
+    .is('deleted_at', null);
+  if (excludePostId) q = q.neq('id', excludePostId);
+  const res = await q.select('id');
+  if (res.error) throw new Error('propagate failed: ' + res.error.message);
+  return res.data?.length ?? 0;
+}
+
 export async function restorePost(id: string): Promise<PostRow> {
   const sb = getSupabase();
   const res = await sb
@@ -152,6 +200,7 @@ export interface PostPatchFields {
   reviewed?: boolean;
   origin?: PostOrigin;
   company_id?: string | null;
+  company_category?: CompanyCategory | null;
   title_override?: string | null;
   notes?: string | null;
   posted_at?: string;
@@ -196,6 +245,7 @@ export interface ListPostsOptions {
   review: 'all' | 'reviewed' | 'unreviewed';
   origin: 'all' | PostOrigin;
   company_id?: string;
+  category?: 'all' | CompanyCategory | 'unclassified';
   date_range: 'all' | '24h' | '7d' | '30d';
   sort: 'posted_desc' | 'posted_asc' | 'captured_desc';
   q?: string;
@@ -217,6 +267,13 @@ export async function listPosts(opts: ListPostsOptions): Promise<{ rows: PostRow
   if (opts.review === 'unreviewed') query = query.eq('reviewed', false);
   if (opts.origin !== 'all') query = query.eq('origin', opts.origin);
   if (opts.company_id) query = query.eq('company_id', opts.company_id);
+  if (opts.category && opts.category !== 'all') {
+    if (opts.category === 'unclassified') {
+      query = query.is('company_category', null).eq('origin', 'company');
+    } else {
+      query = query.eq('company_category', opts.category);
+    }
+  }
 
   if (opts.date_range !== 'all') {
     const cutoff = new Date(

@@ -4,20 +4,20 @@
 
 @layer base {
   :root {
-    /* Light — warm neutral with violet primary (v1 palette) */
-    --background: 240 30% 98%;
+    /* Light — softer off-white, warmer, easier on eyes */
+    --background: 240 12% 93%;
     --foreground: 240 28% 14%;
-    --muted-foreground: 240 10% 48%;
-    --card: 0 0% 100%;
-    --sidebar: 240 25% 96%;
+    --muted-foreground: 240 8% 42%;
+    --card: 240 15% 97%;
+    --sidebar: 240 15% 89%;
     --sidebar-foreground: 240 28% 14%;
-    --primary: 262 83% 60%;
+    --primary: 262 75% 56%;
     --primary-foreground: 0 0% 100%;
-    --accent: 240 20% 93%;
+    --accent: 240 12% 86%;
     --accent-foreground: 240 28% 18%;
-    --border: 240 15% 88%;
-    --input: 240 15% 88%;
-    --ring: 262 83% 60%;
+    --border: 240 10% 80%;
+    --input: 240 10% 82%;
+    --ring: 262 75% 56%;
 
     --tile-violet-from: 262 80% 62%;
     --tile-violet-to: 275 70% 58%;

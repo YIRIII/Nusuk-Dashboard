@@ -36,6 +36,7 @@ export const swrFetcher = <T>(path: string): Promise<T> => request<T>(path);
 export type PostKind = 'tweet' | 'article' | 'unknown';
 export type MediaType = 'image' | 'video' | 'gif' | 'none';
 export type Origin = 'individual' | 'company';
+export type CompanyCategory = 'inner' | 'outer' | 'general' | 'other';
 
 export interface Company {
   id: string;
@@ -69,6 +70,7 @@ export interface Post {
   posted_at: string | null;
   origin: Origin;
   company_id: string | null;
+  company_category: CompanyCategory | null;
   reviewed: boolean;
   reviewed_at: string | null;
   title_override: string | null;

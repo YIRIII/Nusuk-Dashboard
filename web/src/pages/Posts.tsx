@@ -14,6 +14,7 @@ import type { Post } from '@/lib/api';
 type KindFilter = 'all' | 'tweet' | 'article';
 type ReviewFilter = 'all' | 'reviewed' | 'unreviewed';
 type OriginFilter = 'all' | 'individual' | 'company';
+type CategoryFilter = 'all' | 'inner' | 'outer' | 'general' | 'other' | 'unclassified';
 type DateFilter = 'all' | '24h' | '7d' | '30d';
 type SortMode = 'posted_desc' | 'posted_asc' | 'captured_desc';
 
@@ -34,6 +35,9 @@ export function PostsPage() {
   const [review, setReview] = useState<ReviewFilter>((params.get('review') as ReviewFilter) ?? 'all');
   const [origin, setOrigin] = useState<OriginFilter>('all');
   const [company] = useState<string>(params.get('company') ?? 'all');
+  const [category, setCategory] = useState<CategoryFilter>(
+    (params.get('category') as CategoryFilter) ?? 'all',
+  );
   const [dateRange, setDateRange] = useState<DateFilter>('all');
   const [sort, setSort] = useState<SortMode>('posted_desc');
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -45,12 +49,13 @@ export function PostsPage() {
       review,
       origin,
       ...(company !== 'all' ? { company } : {}),
+      category,
       date_range: dateRange,
       sort,
       ...(q ? { q } : {}),
       limit: 100,
     }),
-    [kind, review, origin, company, dateRange, sort, q],
+    [kind, review, origin, company, category, dateRange, sort, q],
   );
 
   const { data, isLoading, error } = usePosts(query);
@@ -184,6 +189,23 @@ export function PostsPage() {
                 {t('posts.origin_filter.' + f)}
               </button>
             ))}
+          </FilterGroup>
+
+          <FilterGroup label={t('posts.filter_label.category')}>
+            {(['all', 'inner', 'outer', 'general', 'other', 'unclassified'] as const).map(
+              (f) => (
+                <button
+                  key={f}
+                  onClick={() => {
+                    setCategory(f);
+                    updateParam('category', f, 'all');
+                  }}
+                  className={CHIP(category === f)}
+                >
+                  {t('posts.category.' + f)}
+                </button>
+              ),
+            )}
           </FilterGroup>
 
           <FilterGroup label={t('posts.filter_label.date')}>
