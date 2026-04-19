@@ -1,3 +1,19 @@
+// Guard against Node 22+ regression in V8's ESM-from-CJS evaluator that
+// silently infinite-loops when importing puppeteer-core. Pinning to 20.x
+// here surfaces the mismatch immediately instead of hanging for minutes.
+{
+  const major = Number(process.versions.node.split('.')[0]);
+  if (major !== 20) {
+    // eslint-disable-next-line no-console
+    console.error(
+      `\n[FATAL] Node ${process.versions.node} detected — this project requires Node 20.x.\n` +
+        `Run: nvm use 20   (or: nvm install 20 && nvm use 20)\n` +
+        `See .nvmrc and CLAUDE.md.\n`,
+    );
+    process.exit(1);
+  }
+}
+
 // eslint-disable-next-line no-console
 console.log('[boot] index.ts start');
 

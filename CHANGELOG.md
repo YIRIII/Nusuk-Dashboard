@@ -69,6 +69,11 @@ Before the next capture, run `supabase/migrations/20260418000001_company_categor
 - `PostsListQuerySchema.category` — filter chip value (includes `unclassified`)
 - `CaptureRequestSchema.force_recapture` + `force_recapture_urls` — duplicate override
 
+### Node version guards (added 2026-04-19 after Node 22 silent-hang incident)
+- `.nvmrc` pinning `20` so `nvm use` picks the right version on `cd`.
+- `package.json` `engines.node` tightened from `>=20.0.0` to `^20.0.0`.
+- Startup preflight in `src/src/index.ts` that exits with a `[FATAL] Node X detected` message if the major version isn't 20 — catches the regression instantly instead of hanging for minutes inside V8's ESM-from-CJS evaluator (the bug triggered by `puppeteer-core` imports on Node 22+).
+
 ### Still pending (not in this drop)
 - Migration apply in Supabase (user action)
 - Oracle Cloud VM provisioning (KI-006 — user's card was flagged by Oracle; blocked on alternate payment)
