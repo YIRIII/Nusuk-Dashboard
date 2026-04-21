@@ -139,9 +139,8 @@ async function runBounded<T>(
 ): Promise<void> {
   let cursor = 0;
   const runners = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
-    while (true) {
+    while (cursor < items.length) {
       const idx = cursor++;
-      if (idx >= items.length) return;
       await worker(items[idx]!, idx);
     }
   });

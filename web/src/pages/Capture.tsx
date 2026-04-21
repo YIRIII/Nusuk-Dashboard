@@ -33,7 +33,7 @@ type Mode = 'single' | 'batch';
 
 // Extract http(s) URLs from arbitrary text — line breaks, spaces, commas, or
 // embedded in Arabic sentences. Strips trailing punctuation and dedupes.
-const URL_RE = /\bhttps?:\/\/[^\s<>"'`\]\)]+/gi;
+const URL_RE = /\bhttps?:\/\/[^\s<>"'`\])]+/gi;
 
 function parseUrls(raw: string): string[] {
   const matches = raw.match(URL_RE) ?? [];
