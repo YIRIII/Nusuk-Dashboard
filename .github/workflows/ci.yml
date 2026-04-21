@@ -21,15 +21,13 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm -w schemas run build
+      - name: Build @nusuk/schemas
+        working-directory: schemas
+        run: npx tsc -b --force --verbose
       - name: Debug workspace layout
         run: |
-          echo "== node_modules/@nusuk =="
-          ls -la node_modules/@nusuk/ || echo "(missing)"
           echo "== schemas/dist =="
           ls -la schemas/dist/ || echo "(missing)"
-          echo "== resolve @nusuk/schemas from src =="
-          node -e "console.log(require.resolve('@nusuk/schemas', { paths: ['src'] }))" || echo "(resolve failed)"
       - run: npm run typecheck
       - run: npm run lint
 
