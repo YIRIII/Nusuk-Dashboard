@@ -10,6 +10,7 @@ import { PostDetailPage } from '@/pages/PostDetail';
 import { RecentlyDeletedPage } from '@/pages/RecentlyDeleted';
 import { MonitorPage } from '@/pages/Monitor';
 import { BackupPage } from '@/pages/Backup';
+import { ReportWeeklyPage } from '@/pages/ReportWeekly';
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -31,6 +32,7 @@ function AnimatedRoutes() {
           <Route path="/recently-deleted" element={<RecentlyDeletedPage />} />
           <Route path="/monitor" element={<MonitorPage />} />
           <Route path="/backup" element={<BackupPage />} />
+          <Route path="/reports/weekly" element={<ReportWeeklyPage />} />
         </Routes>
       </motion.div>
     </AnimatePresence>
