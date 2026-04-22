@@ -1,0 +1,44 @@
+name: Deploy to Oracle
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.ORACLE_SSH_KEY }}" > ~/.ssh/key
+          chmod 600 ~/.ssh/key
+          ssh-keyscan -H 141.147.134.176 >> ~/.ssh/known_hosts
+
+      - name: Package & upload
+        run: |
+          tar czf /tmp/nusuk.tar.gz --exclude=node_modules --exclude=.git --exclude=dist .
+          scp -i ~/.ssh/key /tmp/nusuk.tar.gz ubuntu@141.147.134.176:/tmp/
+
+      - name: Deploy on server
+        run: |
+          ssh -i ~/.ssh/key ubuntu@141.147.134.176 bash -s << 'SCRIPT'
+          set -euo pipefail
+          rm -rf /home/ubuntu/nusuk
+          mkdir -p /home/ubuntu/nusuk
+          tar xzf /tmp/nusuk.tar.gz -C /home/ubuntu/nusuk 2>/dev/null || true
+          cd /home/ubuntu/nusuk
+          sudo docker stop nusuk-api 2>/dev/null || true
+          sudo docker rm nusuk-api 2>/dev/null || true
+          sudo docker build -t nusuk-api:latest -f docker/Dockerfile .
+          sudo docker run -d --name nusuk-api -p 3001:3001 --restart=always --env-file /tmp/nusuk.env nusuk-api:latest
+          echo "Deploy complete"
+          sudo docker logs nusuk-api --tail 5
+          SCRIPT
