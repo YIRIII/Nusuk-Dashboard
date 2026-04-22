@@ -25,14 +25,9 @@ export function LoginPage({ onLogin }: Props) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-8 shadow-lg">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/70 text-primary-foreground font-bold text-lg">
-            ن
-          </div>
-          <div>
-            <h1 className="text-xl font-bold">{t('app.title')}</h1>
-            <p className="text-xs text-muted-foreground">{t('auth.login_subtitle')}</p>
-          </div>
+        <div className="mb-6">
+          <h1 className="text-xl font-bold">Nusuk Social</h1>
+          <p className="text-xs text-muted-foreground">{t('auth.login_subtitle')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
