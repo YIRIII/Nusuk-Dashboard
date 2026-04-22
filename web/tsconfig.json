@@ -16,6 +16,6 @@
     },
     "resolveJsonModule": true
   },
-  "include": ["src/**/*", "src/**/*.json", "vite.config.ts"],
+  "include": ["src/**/*", "src/**/*.json", "src/vite-env.d.ts", "vite.config.ts"],
   "references": [{ "path": "../schemas" }]
 }
