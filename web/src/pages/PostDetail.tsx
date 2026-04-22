@@ -43,7 +43,7 @@ function toLocalInput(iso: string | null): string {
   );
 }
 
-export function PostDetailPage() {
+export function PostDetailPage({ isAdmin = false }: { isAdmin?: boolean }) {
   const { id = '' } = useParams();
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
@@ -169,10 +169,12 @@ export function PostDetailPage() {
         <h1 className="text-xl font-bold ms-4">{t('post_detail.title')}</h1>
 
         <div className="flex flex-wrap items-center gap-2 ms-auto">
-          <Button variant="outline" size="sm" onClick={recapture} disabled={busy}>
-            <RotateCw className={'h-4 w-4 me-2 ' + (busy ? 'animate-spin' : '')} />
-            {t('common.recapture')}
-          </Button>
+          {isAdmin && (
+            <Button variant="outline" size="sm" onClick={recapture} disabled={busy}>
+              <RotateCw className={'h-4 w-4 me-2 ' + (busy ? 'animate-spin' : '')} />
+              {t('common.recapture')}
+            </Button>
+          )}
           {post.screenshot_url && (
             <a
               href={post.screenshot_url}
@@ -185,16 +187,18 @@ export function PostDetailPage() {
               {t('post_detail.download')}
             </a>
           )}
-          {!editing && (
+          {isAdmin && !editing && (
             <Button size="sm" onClick={() => setEditing(true)}>
               <Pencil className="h-4 w-4 me-2" />
               {t('common.edit')}
             </Button>
           )}
-          <Button variant="destructive" size="sm" onClick={del} disabled={busy}>
-            <Trash2 className="h-4 w-4 me-2" />
-            {t('posts.action.delete')}
-          </Button>
+          {isAdmin && (
+            <Button variant="destructive" size="sm" onClick={del} disabled={busy}>
+              <Trash2 className="h-4 w-4 me-2" />
+              {t('posts.action.delete')}
+            </Button>
+          )}
         </div>
       </div>
 

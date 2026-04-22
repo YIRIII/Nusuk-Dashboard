@@ -26,7 +26,7 @@ const CHIP = (active: boolean) =>
     ? 'bg-primary/15 text-primary border-primary/40'
     : 'bg-accent/40 text-muted-foreground border-border hover:bg-accent hover:text-foreground');
 
-export function PostsPage() {
+export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
   const { t, i18n } = useTranslation();
   const [params, setParams] = useSearchParams();
   const { mutate } = useSWRConfig();
@@ -124,6 +124,7 @@ export function PostsPage() {
             </button>
           </p>
         </div>
+        {isAdmin && (
         <div className="ms-auto flex gap-2">
           <button
             onClick={() => {
@@ -154,6 +155,7 @@ export function PostsPage() {
             {t('posts.export_excel')}
           </a>
         </div>
+        )}
       </div>
 
       <div className="rounded-xl border border-border bg-card p-4 space-y-3">
@@ -295,11 +297,12 @@ export function PostsPage() {
               key={p.id}
               post={p}
               companies={companies}
-              selected={selected.has(p.id)}
-              onToggleSelect={() => toggleSelect(p.id)}
-              onQuickEdit={() => setQuickEditPost(p)}
-              onRecaptured={refresh}
-              onChanged={refresh}
+              isAdmin={isAdmin}
+              selected={isAdmin ? selected.has(p.id) : false}
+              onToggleSelect={isAdmin ? () => toggleSelect(p.id) : undefined}
+              onQuickEdit={isAdmin ? () => setQuickEditPost(p) : undefined}
+              onRecaptured={isAdmin ? refresh : undefined}
+              onChanged={isAdmin ? refresh : undefined}
             />
           ))}
         </motion.div>

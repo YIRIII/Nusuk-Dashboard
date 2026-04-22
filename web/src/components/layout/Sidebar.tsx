@@ -76,10 +76,7 @@ export function Sidebar({ isAdmin, onLogout }: SidebarProps) {
         open ? "translate-x-0" : "-translate-x-full rtl:translate-x-full"
       )}>
         <div className="flex items-center justify-between px-5 py-5 border-b border-border">
-          <div>
-            <p className="text-sm font-semibold">Nusuk Social</p>
-            <p className="text-xs text-muted-foreground">v2</p>
-          </div>
+          <p className="text-sm font-semibold">Nusuk Social</p>
           <button onClick={() => setOpen(false)} className="md:hidden text-muted-foreground">
             <X className="h-5 w-5" />
           </button>

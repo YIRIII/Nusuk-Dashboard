@@ -26,6 +26,7 @@ interface Props {
   companies: Company[];
   compact?: boolean;
   selected?: boolean;
+  isAdmin?: boolean;
   onToggleSelect?: () => void;
   onQuickEdit?: () => void;
   onRecaptured?: () => void;
@@ -37,6 +38,7 @@ export function PostCard({
   companies,
   compact = false,
   selected = false,
+  isAdmin = false,
   onToggleSelect,
   onQuickEdit,
   onRecaptured,
@@ -169,7 +171,7 @@ export function PostCard({
               <CheckCircle2 className="h-2.5 w-2.5" />
               {t('posts.reviewed')}
             </span>
-          ) : (
+          ) : isAdmin ? (
             <button
               onClick={markReviewed}
               title={t('quick_edit.mark_reviewed')}
@@ -178,9 +180,15 @@ export function PostCard({
               <Circle className="h-2 w-2" fill="currentColor" />
               {t('posts.unreviewed')}
             </button>
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-semibold text-amber-500 backdrop-blur border border-amber-500/30">
+              <Circle className="h-2 w-2" fill="currentColor" />
+              {t('posts.unreviewed')}
+            </span>
           )}
         </div>
 
+        {isAdmin && (
         <div className="absolute top-2 end-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
           <button
             onClick={recapture}
@@ -210,6 +218,7 @@ export function PostCard({
             <Trash2 className="h-3.5 w-3.5" />
           </button>
         </div>
+        )}
 
         <div
           className="flex flex-1 flex-col gap-2 p-4 cursor-pointer"

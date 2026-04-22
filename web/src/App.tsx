@@ -33,8 +33,8 @@ function AnimatedRoutes({ isAdmin }: { isAdmin: boolean }) {
       >
         <Routes location={location}>
           <Route path="/" element={<DashboardPage />} />
-          <Route path="/posts" element={<PostsPage />} />
-          <Route path="/posts/:id" element={<PostDetailPage />} />
+          <Route path="/posts" element={<PostsPage isAdmin={isAdmin} />} />
+          <Route path="/posts/:id" element={<PostDetailPage isAdmin={isAdmin} />} />
           <Route path="/reports/weekly" element={<ReportWeeklyPage />} />
           <Route path="/capture" element={<AdminRoute isAdmin={isAdmin}><CapturePage /></AdminRoute>} />
           <Route path="/recently-deleted" element={<AdminRoute isAdmin={isAdmin}><RecentlyDeletedPage /></AdminRoute>} />
