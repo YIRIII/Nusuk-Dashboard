@@ -298,11 +298,13 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
               post={p}
               companies={companies}
               isAdmin={isAdmin}
-              selected={isAdmin ? selected.has(p.id) : false}
-              onToggleSelect={isAdmin ? () => toggleSelect(p.id) : undefined}
-              onQuickEdit={isAdmin ? () => setQuickEditPost(p) : undefined}
-              onRecaptured={isAdmin ? refresh : undefined}
-              onChanged={isAdmin ? refresh : undefined}
+              selected={isAdmin && selected.has(p.id)}
+              {...(isAdmin ? {
+                onToggleSelect: () => toggleSelect(p.id),
+                onQuickEdit: () => setQuickEditPost(p),
+                onRecaptured: refresh,
+                onChanged: refresh,
+              } : {})}
             />
           ))}
         </motion.div>
