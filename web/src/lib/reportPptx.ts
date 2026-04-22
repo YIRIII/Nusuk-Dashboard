@@ -1,5 +1,6 @@
 import PptxGenJS from 'pptxgenjs';
 import type { Post, CompanyCategory } from './api';
+import type { TagCount } from './hashtags';
 
 export type Category = CompanyCategory | 'unclassified';
 
@@ -19,6 +20,7 @@ export interface ReportData {
   categoryPrevCounts: Record<Category, number>;
   categoryLabels: Record<Category, string>;
   topVoices: { handle: string; n: number; category: Category | null }[];
+  topHashtags: TagCount[];
   highlights: Post[];
   datePostedLabel: (p: Post) => string;
   labels: {
@@ -31,6 +33,7 @@ export interface ReportData {
     kpiUnique: string;
     categories: string;
     topVoices: string;
+    topHashtags: string;
     highlights: string;
     noScreenshot: string;
     period: string;
@@ -249,7 +252,7 @@ export async function buildWeeklyPptx(data: ReportData, fileName: string): Promi
   const panelY = 4.2;
   const panelH = 2.9;
   const leftX = 0.5;
-  const leftW = 6.1;
+  const leftW = 4.1;
   s1.addShape('rect', {
     x: leftX,
     y: panelY,
@@ -287,7 +290,7 @@ export async function buildWeeklyPptx(data: ReportData, fileName: string): Promi
       color: '475569',
     });
     const barX = leftX + 1.65;
-    const barW = 2.8;
+    const barW = 1.0;
     s1.addShape('rect', {
       x: barX,
       y: rowY + 0.08,
@@ -307,7 +310,7 @@ export async function buildWeeklyPptx(data: ReportData, fileName: string): Promi
       rectRadius: 0.09,
     });
     s1.addText(n.toString(), {
-      x: leftX + 4.55,
+      x: leftX + 2.75,
       y: rowY,
       w: 0.4,
       h: 0.3,
@@ -317,7 +320,7 @@ export async function buildWeeklyPptx(data: ReportData, fileName: string): Promi
       align: 'right',
     });
     s1.addText(pct + '%', {
-      x: leftX + 4.95,
+      x: leftX + 3.15,
       y: rowY,
       w: 0.55,
       h: 0.3,
@@ -327,9 +330,9 @@ export async function buildWeeklyPptx(data: ReportData, fileName: string): Promi
     });
     if (delta !== 0) {
       s1.addText((delta > 0 ? '+' : '') + delta, {
-        x: leftX + 5.55,
+        x: leftX + 3.6,
         y: rowY,
-        w: 0.5,
+        w: 0.4,
         h: 0.3,
         fontSize: 9,
         bold: true,
@@ -340,21 +343,21 @@ export async function buildWeeklyPptx(data: ReportData, fileName: string): Promi
   });
 
   // Top voices
-  const rightX = 6.75;
-  const rightW = 6.1;
+  const midX = 4.75;
+  const midW = 4.2;
   s1.addShape('rect', {
-    x: rightX,
+    x: midX,
     y: panelY,
-    w: rightW,
+    w: midW,
     h: panelH,
     fill: { color: 'F8FAFC' },
     line: { color: 'E2E8F0', width: 0.75 },
     rectRadius: 0.08,
   });
   s1.addText(data.labels.topVoices, {
-    x: rightX + 0.2,
+    x: midX + 0.2,
     y: panelY + 0.15,
-    w: rightW - 0.4,
+    w: midW - 0.4,
     h: 0.3,
     fontSize: 12,
     bold: true,
@@ -362,9 +365,9 @@ export async function buildWeeklyPptx(data: ReportData, fileName: string): Promi
   });
   if (data.topVoices.length === 0) {
     s1.addText('—', {
-      x: rightX + 0.2,
+      x: midX + 0.2,
       y: panelY + 0.6,
-      w: rightW - 0.4,
+      w: midW - 0.4,
       h: 0.3,
       fontSize: 10,
       color: '94a3b8',
@@ -373,49 +376,124 @@ export async function buildWeeklyPptx(data: ReportData, fileName: string): Promi
     data.topVoices.forEach((v, i) => {
       const rowY = panelY + 0.6 + i * 0.42;
       s1.addText('#' + (i + 1), {
-        x: rightX + 0.2,
+        x: midX + 0.2,
         y: rowY,
-        w: 0.5,
+        w: 0.4,
         h: 0.3,
         fontSize: 10,
         bold: true,
         color: '64748b',
       });
       s1.addText(v.handle, {
-        x: rightX + 0.7,
+        x: midX + 0.6,
         y: rowY,
-        w: 3.0,
+        w: 2.0,
         h: 0.3,
-        fontSize: 11,
+        fontSize: 10,
         color: '0f172a',
       });
       if (v.category) {
         s1.addShape('rect', {
-          x: rightX + 3.8,
+          x: midX + 2.6,
           y: rowY + 0.04,
-          w: 1.2,
+          w: 0.9,
           h: 0.26,
           fill: { color: CAT_HEX[v.category] },
           line: { color: CAT_HEX[v.category], width: 0 },
           rectRadius: 0.06,
         });
         s1.addText(data.categoryLabels[v.category], {
-          x: rightX + 3.8,
+          x: midX + 2.6,
           y: rowY + 0.02,
-          w: 1.2,
+          w: 0.9,
           h: 0.3,
-          fontSize: 8.5,
+          fontSize: 8,
           bold: true,
           color: 'FFFFFF',
           align: 'center',
         });
       }
       s1.addText(v.n.toString(), {
-        x: rightX + 5.1,
+        x: midX + 3.5,
         y: rowY,
-        w: 0.8,
+        w: 0.5,
         h: 0.3,
         fontSize: 12,
+        bold: true,
+        color: '0f172a',
+        align: 'right',
+      });
+    });
+  }
+
+  // Top hashtags
+  const tagX = 9.1;
+  const tagW = 3.73;
+  s1.addShape('rect', {
+    x: tagX,
+    y: panelY,
+    w: tagW,
+    h: panelH,
+    fill: { color: 'F8FAFC' },
+    line: { color: 'E2E8F0', width: 0.75 },
+    rectRadius: 0.08,
+  });
+  s1.addText(data.labels.topHashtags, {
+    x: tagX + 0.2,
+    y: panelY + 0.15,
+    w: tagW - 0.4,
+    h: 0.3,
+    fontSize: 12,
+    bold: true,
+    color: '0f172a',
+  });
+  if (data.topHashtags.length === 0) {
+    s1.addText('—', {
+      x: tagX + 0.2,
+      y: panelY + 0.6,
+      w: tagW - 0.4,
+      h: 0.3,
+      fontSize: 10,
+      color: '94a3b8',
+    });
+  } else {
+    const maxTag = Math.max(1, ...data.topHashtags.map((tc) => tc.count));
+    data.topHashtags.slice(0, 5).forEach((tc, i) => {
+      const rowY = panelY + 0.6 + i * 0.42;
+      s1.addText(tc.tag, {
+        x: tagX + 0.2,
+        y: rowY,
+        w: 1.8,
+        h: 0.3,
+        fontSize: 10,
+        color: '6366f1',
+      });
+      const tBarX = tagX + 2.0;
+      const tBarW = 1.0;
+      s1.addShape('rect', {
+        x: tBarX,
+        y: rowY + 0.08,
+        w: tBarW,
+        h: 0.18,
+        fill: { color: 'E2E8F0' },
+        line: { color: 'E2E8F0', width: 0 },
+        rectRadius: 0.09,
+      });
+      s1.addShape('rect', {
+        x: tBarX,
+        y: rowY + 0.08,
+        w: Math.max(0.02, (tc.count / maxTag) * tBarW),
+        h: 0.18,
+        fill: { color: '6366f1' },
+        line: { color: '6366f1', width: 0 },
+        rectRadius: 0.09,
+      });
+      s1.addText(tc.count.toString(), {
+        x: tagX + 3.0,
+        y: rowY,
+        w: 0.5,
+        h: 0.3,
+        fontSize: 11,
         bold: true,
         color: '0f172a',
         align: 'right',

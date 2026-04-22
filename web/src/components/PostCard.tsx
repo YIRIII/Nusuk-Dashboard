@@ -19,6 +19,7 @@ import { api, type Post, type Company } from '@/lib/api';
 import { cardHover, staggerItem } from '@/lib/motion';
 import { useToast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
+import { extractHashtags } from '@/lib/hashtags';
 
 interface Props {
   post: Post;
@@ -57,6 +58,7 @@ export function PostCard({
   const content = meta.text ?? '';
   const thumb = post.screenshot_url;
   const postedAt = post.posted_at ?? meta.posted_at;
+  const hashtags = extractHashtags(meta.text as string | undefined);
 
   const openDetail = () => navigate('/posts/' + post.id);
 
@@ -130,7 +132,7 @@ export function PostCard({
               src={thumb}
               alt=""
               loading="lazy"
-              className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-[1.03]"
+              className="h-full w-full object-cover object-[center_10%] transition-transform duration-300 group-hover:scale-[1.03]"
             />
             {/* Bottom fade so the cutoff doesn't look harsh */}
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-card via-card/70 to-transparent" />
@@ -226,6 +228,25 @@ export function PostCard({
             <p className={cn('text-xs text-muted-foreground', compact ? 'line-clamp-1' : 'line-clamp-2')}>
               {content}
             </p>
+          )}
+
+          {hashtags.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {hashtags.slice(0, 3).map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary"
+                  dir="auto"
+                >
+                  {tag}
+                </span>
+              ))}
+              {hashtags.length > 3 && (
+                <span className="rounded-md bg-accent px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                  +{hashtags.length - 3}
+                </span>
+              )}
+            </div>
           )}
 
           <div className="mt-auto flex items-center justify-between pt-2 text-[11px] text-muted-foreground">

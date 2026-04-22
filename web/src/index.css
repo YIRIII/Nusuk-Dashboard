@@ -128,6 +128,7 @@
     padding: 0 !important;
     overflow: visible !important;
     background: #ffffff !important;
+    height: auto !important;
   }
   .report-slide {
     page-break-after: always;
@@ -140,6 +141,19 @@
     height: 100vh !important;
     aspect-ratio: auto !important;
     margin: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    /* Force light-mode tokens so dark-mode prints legibly on white paper */
+    --background: 240 12% 93%;
+    --foreground: 240 28% 14%;
+    --muted-foreground: 240 8% 42%;
+    --card: 240 15% 97%;
+    --primary: 262 75% 56%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 240 12% 86%;
+    --accent-foreground: 240 28% 18%;
+    --border: 240 10% 80%;
+    color: hsl(240 28% 14%) !important;
   }
   .report-slide:last-of-type {
     page-break-after: auto;

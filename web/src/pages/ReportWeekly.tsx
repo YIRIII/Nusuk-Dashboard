@@ -5,6 +5,7 @@ import type { Post, CompanyCategory } from '@/lib/api';
 import { Download, Printer } from 'lucide-react';
 import { buildWeeklyPptx, type ReportData } from '@/lib/reportPptx';
 import { Switch } from '@/components/ui/switch';
+import { countHashtags } from '@/lib/hashtags';
 
 type Category = CompanyCategory | 'unclassified';
 type DateSystem = 'gregorian' | 'hijri';
@@ -284,6 +285,11 @@ export function ReportWeeklyPage() {
     return picks.slice(0, 6);
   }, [thisWeek, topVoices]);
 
+  const topHashtags = useMemo(
+    () => countHashtags(thisWeek.map((p) => p.metadata?.text as string | undefined)).slice(0, 8),
+    [thisWeek],
+  );
+
   async function handleDownloadPptx() {
     if (downloading) return;
     setDownloading(true);
@@ -312,6 +318,7 @@ export function ReportWeeklyPage() {
         categoryPrevCounts: prevBreakdown,
         categoryLabels,
         topVoices,
+        topHashtags,
         highlights,
         datePostedLabel: (p) => fmtDate(postDate(p), locale),
         labels: {
@@ -324,6 +331,7 @@ export function ReportWeeklyPage() {
           kpiUnique: t('reports.weekly.kpi.unique'),
           categories: t('reports.weekly.categories'),
           topVoices: t('reports.weekly.top_voices'),
+          topHashtags: t('reports.weekly.top_hashtags'),
           highlights: t('reports.weekly.highlights'),
           noScreenshot: t('reports.weekly.no_screenshot'),
           period: t('reports.weekly.period'),
@@ -506,7 +514,7 @@ export function ReportWeeklyPage() {
             />
           </div>
 
-          <div className="mt-5 grid min-h-0 flex-1 grid-cols-2 gap-4">
+          <div className="mt-5 grid min-h-0 flex-1 grid-cols-3 gap-4">
             <div className="min-h-0 overflow-hidden rounded-xl border border-border bg-background/50 p-5">
               <p className="text-sm font-semibold text-foreground">
                 {t('reports.weekly.categories')}
@@ -585,6 +593,34 @@ export function ReportWeeklyPage() {
                 )}
               </ul>
             </div>
+
+            <div className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-background/50 p-4">
+              <p className="text-sm font-semibold text-foreground">
+                {t('reports.weekly.top_hashtags')}
+              </p>
+              <ul className="mt-2 flex min-h-0 flex-1 flex-col justify-between">
+                {topHashtags.length === 0 ? (
+                  <li className="text-xs text-muted-foreground">
+                    {t('reports.weekly.top_hashtags_empty')}
+                  </li>
+                ) : (
+                  topHashtags.slice(0, 5).map((tc, i) => (
+                    <li
+                      key={tc.tag}
+                      className="flex items-center gap-2 rounded-lg px-1.5 py-0.5"
+                    >
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-muted-foreground">
+                        {i + 1}
+                      </span>
+                      <span className="flex-1 truncate text-xs font-medium text-primary" dir="auto">
+                        {tc.tag}
+                      </span>
+                      <span className="w-6 shrink-0 text-end text-sm font-bold tabular-nums">{tc.count}</span>
+                    </li>
+                  ))
+                )}
+              </ul>
+            </div>
           </div>
         </div>
       </section>
@@ -620,12 +656,12 @@ export function ReportWeeklyPage() {
                     key={p.id}
                     className="flex flex-col overflow-hidden rounded-xl border border-border bg-background/50"
                   >
-                    <div className="relative h-36 bg-accent/40">
+                    <div className="relative h-44 bg-accent/40 overflow-hidden">
                       {p.screenshot_url ? (
                         <img
                           src={p.screenshot_url}
                           alt={handle}
-                          className="h-full w-full object-cover"
+                          className="h-full w-full object-cover object-top"
                           loading="lazy"
                         />
                       ) : (

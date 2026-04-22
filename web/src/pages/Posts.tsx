@@ -10,6 +10,7 @@ import { QuickEditDialog } from '@/components/QuickEditDialog';
 import { staggerGrid } from '@/lib/motion';
 import { usePosts, useCompanies, type PostsQuery } from '@/hooks/usePosts';
 import type { Post } from '@/lib/api';
+import { extractHashtags, countHashtags } from '@/lib/hashtags';
 
 type KindFilter = 'all' | 'tweet' | 'article';
 type ReviewFilter = 'all' | 'reviewed' | 'unreviewed';
@@ -40,6 +41,7 @@ export function PostsPage() {
   );
   const [dateRange, setDateRange] = useState<DateFilter>('all');
   const [sort, setSort] = useState<SortMode>('posted_desc');
+  const [selectedTag, setSelectedTag] = useState<string>(params.get('tag') ?? '');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [quickEditPost, setQuickEditPost] = useState<Post | null>(null);
 
@@ -61,7 +63,21 @@ export function PostsPage() {
   const { data, isLoading, error } = usePosts(query);
   const { data: companiesData } = useCompanies();
   const companies = companiesData?.rows ?? [];
-  const posts = data?.rows ?? [];
+  const allPosts = data?.rows ?? [];
+
+  const topTags = useMemo(
+    () => countHashtags(allPosts.map((p) => p.metadata?.text as string | undefined)),
+    [allPosts],
+  );
+
+  const posts = useMemo(() => {
+    if (!selectedTag) return allPosts;
+    return allPosts.filter((p) => {
+      const tags = extractHashtags(p.metadata?.text as string | undefined);
+      return tags.some((t) => t.toLowerCase() === selectedTag.toLowerCase());
+    });
+  }, [allPosts, selectedTag]);
+
   const total = data?.total ?? 0;
   const unreviewedCount = posts.filter((p) => !p.reviewed).length;
 
@@ -207,6 +223,27 @@ export function PostsPage() {
               ),
             )}
           </FilterGroup>
+
+          {topTags.length > 0 && (
+            <FilterGroup label={t('posts.filter_label.hashtag')}>
+              <select
+                value={selectedTag}
+                onChange={(e) => {
+                  setSelectedTag(e.target.value);
+                  updateParam('tag', e.target.value, '');
+                }}
+                className="h-8 rounded-lg border border-border bg-accent/40 px-3 text-xs font-medium text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                dir="auto"
+              >
+                <option value="">{t('posts.filter.all')}</option>
+                {topTags.slice(0, 20).map((tc) => (
+                  <option key={tc.tag} value={tc.tag}>
+                    {tc.tag} ({tc.count})
+                  </option>
+                ))}
+              </select>
+            </FilterGroup>
+          )}
 
           <FilterGroup label={t('posts.filter_label.date')}>
             {(['all', '24h', '7d', '30d'] as const).map((d) => (
