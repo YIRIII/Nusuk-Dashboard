@@ -352,8 +352,8 @@ export function ReportWeeklyPage() {
     sub?: string | undefined;
   }
   const KpiTile = ({ value, label, sub }: KpiTileProps) => (
-    <div className="flex flex-col justify-between rounded-2xl border border-border bg-card p-6 min-h-[150px]">
-      <p className="text-4xl font-bold tracking-tight text-foreground">{value}</p>
+    <div className="flex flex-col justify-between rounded-2xl border border-border bg-card p-3 sm:p-6 min-h-[100px] sm:min-h-[150px]">
+      <p className="text-2xl sm:text-4xl font-bold tracking-tight text-foreground">{value}</p>
       <div>
         <p className="text-sm font-semibold text-foreground">{label}</p>
         {sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}
@@ -437,11 +437,11 @@ export function ReportWeeklyPage() {
 
       {/* ───── PAGE 1 — Executive Summary ───── */}
       <section
-        className="report-slide relative mx-auto w-full overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
-        style={{ aspectRatio: '16 / 9', maxWidth: 1280 }}
+        className="report-slide relative mx-auto w-full overflow-hidden rounded-2xl border border-border bg-card shadow-sm md:[aspect-ratio:16/9]"
+        style={{ maxWidth: 1280 }}
       >
-        <div className="flex h-full flex-col p-10">
-          <div className="flex items-start justify-between">
+        <div className="flex h-full flex-col p-4 sm:p-10">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div>
               <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
                 {t('reports.weekly.brand')}
@@ -483,7 +483,7 @@ export function ReportWeeklyPage() {
             <p className="mt-1 text-base leading-relaxed text-foreground">{headline}</p>
           </div>
 
-          <div className="mt-5 grid grid-cols-4 gap-4">
+          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
             <KpiTile
               value={total.toLocaleString(locale)}
               label={t('reports.weekly.kpi.total')}
@@ -514,7 +514,7 @@ export function ReportWeeklyPage() {
             />
           </div>
 
-          <div className="mt-5 grid min-h-0 flex-1 grid-cols-3 gap-4">
+          <div className="mt-5 grid min-h-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
             <div className="min-h-0 overflow-hidden rounded-xl border border-border bg-background/50 p-5">
               <p className="text-sm font-semibold text-foreground">
                 {t('reports.weekly.categories')}
@@ -627,10 +627,10 @@ export function ReportWeeklyPage() {
 
       {/* ───── PAGE 2 — Highlights ───── */}
       <section
-        className="report-slide relative mx-auto w-full overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
-        style={{ aspectRatio: '16 / 9', maxWidth: 1280 }}
+        className="report-slide relative mx-auto w-full overflow-hidden rounded-2xl border border-border bg-card shadow-sm md:[aspect-ratio:16/9]"
+        style={{ maxWidth: 1280 }}
       >
-        <div className="flex h-full flex-col p-10">
+        <div className="flex h-full flex-col p-4 sm:p-10">
           <div className="flex items-baseline justify-between">
             <h2 className="text-2xl font-bold tracking-tight">
               {t('reports.weekly.highlights')}
@@ -640,7 +640,7 @@ export function ReportWeeklyPage() {
             </p>
           </div>
 
-          <div className="mt-5 grid flex-1 grid-cols-3 grid-rows-2 gap-4">
+          <div className="mt-5 grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 md:grid-rows-2 sm:gap-4">
             {highlights.length === 0 ? (
               <div className="col-span-3 row-span-2 flex items-center justify-center text-sm text-muted-foreground">
                 {t('reports.weekly.highlights_empty')}

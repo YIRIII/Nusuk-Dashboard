@@ -47,7 +47,7 @@ export function App() {
           <Sidebar />
           <div className="flex-1 flex flex-col min-w-0 h-full print:h-auto print:overflow-visible">
             <Topbar />
-            <main className="flex-1 overflow-y-auto p-6 relative print:overflow-visible print:h-auto">
+            <main className="flex-1 overflow-y-auto p-3 pt-14 md:p-6 md:pt-6 relative print:overflow-visible print:h-auto">
               <AnimatedRoutes />
             </main>
           </div>

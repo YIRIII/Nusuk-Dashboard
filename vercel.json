@@ -1,0 +1,9 @@
+{
+  "buildCommand": "npm ci && npm -w @nusuk/schemas run build && npm -w @nusuk/web run build",
+  "outputDirectory": "web/dist",
+  "installCommand": "npm ci --workspaces --include-workspace-root",
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/((?!api|health).*)", "destination": "/index.html" }
+  ]
+}

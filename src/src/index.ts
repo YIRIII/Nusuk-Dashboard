@@ -40,6 +40,7 @@ for (const candidate of [
 console.log('[boot] env loaded, importing app deps');
 
 import express from 'express';
+import { join } from 'node:path';
 import { pinoHttp } from 'pino-http';
 import { logger } from './logger.js';
 import { traceId } from './middleware/trace-id.js';
@@ -62,6 +63,13 @@ const pool = createBrowserPool({
 });
 const captureService = new CaptureService(pool);
 
+app.use((_req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type,x-trace-id');
+  if (_req.method === 'OPTIONS') return void res.sendStatus(204);
+  next();
+});
 app.use(traceId);
 app.use(
   pinoHttp({
@@ -88,6 +96,13 @@ app.use('/api', captureRouter(captureService));
 app.use('/api', postsRouter());
 app.use('/api', exportRouter());
 app.use('/api', activityRouter());
+
+const webDist = join(HERE, '../../web/dist');
+app.use(express.static(webDist));
+app.get('*', (_req, res, next) => {
+  if (_req.path.startsWith('/api') || _req.path === '/health') return next();
+  res.sendFile(join(webDist, 'index.html'));
+});
 
 const server = app.listen(port, () => {
   // Plain console.log first — guarantees visibility even if pino is mis-wired.

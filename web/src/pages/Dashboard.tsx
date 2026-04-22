@@ -174,18 +174,18 @@ export function DashboardPage() {
         variants={staggerGrid}
         initial="hidden"
         animate="visible"
-        className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5"
+        className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-5"
       >
         {tiles.map(({ k, v, sub, Icon, accent, iconBg }) => (
           <motion.div key={k} variants={staggerItem}>
-            <div className="group relative overflow-hidden rounded-xl border border-border bg-card p-5 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg">
+            <div className="group relative overflow-hidden rounded-xl border border-border bg-card p-3 sm:p-5 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg">
               <div className="flex items-start justify-between">
                 <div className={'flex h-9 w-9 items-center justify-center rounded-lg ' + iconBg}>
                   <Icon className={'h-4 w-4 ' + accent} />
                 </div>
                 <TrendingUp className="h-4 w-4 text-muted-foreground/40" />
               </div>
-              <p className="mt-4 text-3xl font-bold tracking-tight">{v}</p>
+              <p className="mt-3 text-2xl sm:text-3xl font-bold tracking-tight">{v}</p>
               <p className="mt-1 text-xs font-medium text-muted-foreground">{t(k)}</p>
               {sub && <p className="mt-1 text-[10px] text-muted-foreground/70">{sub}</p>}
             </div>

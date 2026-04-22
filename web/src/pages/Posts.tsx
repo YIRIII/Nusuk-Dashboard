@@ -328,11 +328,11 @@ export function PostsPage() {
 
 function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
       <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
         {label}
       </span>
-      <div className="flex flex-wrap gap-1.5">{children}</div>
+      <div className="flex flex-wrap gap-1">{children}</div>
     </div>
   );
 }
