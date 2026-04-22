@@ -47,6 +47,11 @@
   "theme.dark": "الوضع الداكن",
 
   "auth.logout": "تسجيل الخروج",
+  "auth.login": "تسجيل الدخول",
+  "auth.login_subtitle": "دخول المسؤول",
+  "auth.email": "البريد الإلكتروني",
+  "auth.password": "كلمة المرور",
+  "auth.invalid": "البريد أو كلمة المرور غير صحيحة",
   "auth.signed_in_as": "الحساب",
 
   "dashboard.welcome": "هذه نظرة سريعة على الأرشيف.",

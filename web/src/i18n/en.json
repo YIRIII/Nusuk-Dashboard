@@ -47,6 +47,11 @@
   "theme.dark": "Dark mode",
 
   "auth.logout": "Logout",
+  "auth.login": "Login",
+  "auth.login_subtitle": "Admin access",
+  "auth.email": "Email",
+  "auth.password": "Password",
+  "auth.invalid": "Invalid email or password",
   "auth.signed_in_as": "Signed in as",
 
   "dashboard.welcome": "Here's a quick overview of your archive.",

@@ -50,6 +50,7 @@ import { captureRouter } from './routes/capture.js';
 import { postsRouter } from './routes/posts.js';
 import { exportRouter } from './routes/export.js';
 import { activityRouter } from './routes/activity.js';
+import { login, requireAdmin } from './auth.js';
 
 // eslint-disable-next-line no-console
 console.log('[boot] building app');
@@ -66,7 +67,7 @@ const captureService = new CaptureService(pool);
 app.use((_req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type,x-trace-id');
+  res.header('Access-Control-Allow-Headers', 'Content-Type,x-trace-id,Authorization');
   if (_req.method === 'OPTIONS') return void res.sendStatus(204);
   next();
 });
@@ -83,6 +84,24 @@ app.get('/health', (_req, res) => {
   res.json({ ok: true, ts: new Date().toISOString() });
 });
 
+app.post('/api/auth/login', (req, res) => {
+  const { email, password } = req.body as { email?: string; password?: string };
+  if (!email || !password) {
+    res.status(400).json({ error: 'email and password required' });
+    return;
+  }
+  const token = login(email, password);
+  if (!token) {
+    res.status(401).json({ error: 'invalid credentials' });
+    return;
+  }
+  res.json({ token, email });
+});
+
+app.get('/api/auth/me', requireAdmin, (_req, res) => {
+  res.json({ ok: true });
+});
+
 app.get('/api/metrics', (_req, res) => {
   res.json({
     window: '24h',
@@ -92,10 +111,10 @@ app.get('/api/metrics', (_req, res) => {
   });
 });
 
-app.use('/api', captureRouter(captureService));
 app.use('/api', postsRouter());
 app.use('/api', exportRouter());
-app.use('/api', activityRouter());
+app.use('/api', requireAdmin, captureRouter(captureService));
+app.use('/api', requireAdmin, activityRouter());
 
 const webDist = join(HERE, '../../web/dist');
 app.use(express.static(webDist));
