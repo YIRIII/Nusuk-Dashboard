@@ -310,7 +310,7 @@ export function ReportWeeklyPage() {
         total,
         wow,
         prevTotal,
-        busiestLabel: busiest ? fmtWeekday(busiest.date, locale) : '',
+        busiestLabel: busiest ? fmtWeekdaySys(busiest.date, locale, dateSystem) : '',
         busiestCount: busiest?.count ?? 0,
         uniqueHandles,
         categoryOrder: CATEGORY_ORDER,
@@ -320,7 +320,7 @@ export function ReportWeeklyPage() {
         topVoices,
         topHashtags,
         highlights,
-        datePostedLabel: (p) => fmtDate(postDate(p), locale),
+        datePostedLabel: (p) => fmtDateSys(postDate(p), locale, dateSystem),
         labels: {
           brand: t('reports.weekly.brand'),
           execSummary: t('reports.weekly.exec_summary'),
@@ -335,8 +335,10 @@ export function ReportWeeklyPage() {
           highlights: t('reports.weekly.highlights'),
           noScreenshot: t('reports.weekly.no_screenshot'),
           period: t('reports.weekly.period'),
+          originIndividual: t('posts.origin.individual'),
         },
         isRtl: isAr,
+        dateSystem,
       };
       const fileName = 'nusuk-weekly-' + startISO + '-to-' + endISO + '.pptx';
       await buildWeeklyPptx(reportData, fileName);

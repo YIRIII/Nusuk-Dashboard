@@ -37,8 +37,10 @@ export interface ReportData {
     highlights: string;
     noScreenshot: string;
     period: string;
+    originIndividual: string;
   };
   isRtl: boolean;
+  dateSystem?: 'gregorian' | 'hijri';
 }
 
 // Category colors (hex, matches the web UI palette).
@@ -129,7 +131,10 @@ export async function buildWeeklyPptx(data: ReportData, fileName: string): Promi
     charSpacing: 1.5,
     align: 'right',
   });
-  s1.addText(data.startLabel + '  —  ' + data.endLabel, {
+  const isHijri = data.dateSystem === 'hijri';
+  const primaryDateLabel = isHijri ? data.hijriLabel : data.startLabel + '  —  ' + data.endLabel;
+  const secondaryDateLabel = isHijri ? data.startLabel + '  —  ' + data.endLabel : data.hijriLabel;
+  s1.addText(primaryDateLabel, {
     x: 9.35,
     y: 0.77,
     w: 3.3,
@@ -139,7 +144,7 @@ export async function buildWeeklyPptx(data: ReportData, fileName: string): Promi
     color: '0f172a',
     align: 'right',
   });
-  s1.addText(data.hijriLabel, {
+  s1.addText(secondaryDateLabel, {
     x: 9.35,
     y: 1.05,
     w: 3.3,
@@ -619,6 +624,26 @@ export async function buildWeeklyPptx(data: ReportData, fileName: string): Promi
           rectRadius: 0.06,
         });
         s2.addText(data.categoryLabels[cat as Category], {
+          x: x + cardW - 1.15,
+          y: y + 1.93,
+          w: 1.0,
+          h: 0.3,
+          fontSize: 8.5,
+          bold: true,
+          color: 'FFFFFF',
+          align: 'center',
+        });
+      } else {
+        s2.addShape('rect', {
+          x: x + cardW - 1.15,
+          y: y + 1.95,
+          w: 1.0,
+          h: 0.26,
+          fill: { color: '0ea5e9' },
+          line: { color: '0ea5e9', width: 0 },
+          rectRadius: 0.06,
+        });
+        s2.addText(data.labels.originIndividual, {
           x: x + cardW - 1.15,
           y: y + 1.93,
           w: 1.0,

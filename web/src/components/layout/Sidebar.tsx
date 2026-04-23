@@ -72,7 +72,7 @@ export function Sidebar({ isAdmin, onLogout }: SidebarProps) {
 
       <aside className={cn(
         "flex h-full w-64 shrink-0 flex-col border-e border-border bg-sidebar text-sidebar-foreground",
-        "fixed inset-y-0 start-0 z-50 transition-transform duration-200 md:static md:translate-x-0",
+        "fixed inset-y-0 start-0 z-50 transition-transform duration-200 md:static md:translate-x-0 md:rtl:translate-x-0",
         open ? "translate-x-0" : "-translate-x-full rtl:translate-x-full"
       )}>
         <div className="flex items-center justify-between px-5 py-5 border-b border-border">
