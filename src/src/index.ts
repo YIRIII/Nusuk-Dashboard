@@ -126,8 +126,8 @@ app.get('*', (_req, res, next) => {
 const server = app.listen(port, () => {
   // Plain console.log first — guarantees visibility even if pino is mis-wired.
   // eslint-disable-next-line no-console
-  console.log('nusuk api listening on port ' + port);
-  logger.info({ port }, 'nusuk api listening');
+  console.log('hadaq api listening on port ' + port);
+  logger.info({ port }, 'hadaq api listening');
 });
 server.on('error', (err) => {
   // eslint-disable-next-line no-console

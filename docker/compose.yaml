@@ -3,7 +3,7 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    image: nusuk-api:local
+    image: hadaq-api:local
     environment:
       NODE_ENV: production
       PORT: 3001

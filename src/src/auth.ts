@@ -4,7 +4,7 @@ import type { Request, Response, NextFunction } from 'express';
 const SALT = 'nusuk-auth-salt-v1';
 const ADMIN_EMAIL = 'r.endargiri@gmail.com';
 const ADMIN_HASH = '5a25f7d172d1b0b748821a533618ca1b2342aec8f4cabe02f02c7f5350246bd3';
-const TOKEN_SECRET = process.env['AUTH_SECRET'] ?? 'nusuk-default-secret-change-me';
+const TOKEN_SECRET = process.env['AUTH_SECRET'] ?? 'hadaq-default-secret-change-me';
 const TOKEN_TTL = 7 * 24 * 60 * 60 * 1000;
 
 function hashPassword(password: string): string {

@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 
-const TOKEN_KEY = 'nusuk_token';
+const TOKEN_KEY = 'hadaq_token';
 
 export function useAuth() {
   const [token, setTokenState] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));

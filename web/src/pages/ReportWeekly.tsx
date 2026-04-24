@@ -340,7 +340,7 @@ export function ReportWeeklyPage() {
         isRtl: isAr,
         dateSystem,
       };
-      const fileName = 'nusuk-weekly-' + startISO + '-to-' + endISO + '.pptx';
+      const fileName = 'hadaq-weekly-' + startISO + '-to-' + endISO + '.pptx';
       await buildWeeklyPptx(reportData, fileName);
     } finally {
       setDownloading(false);

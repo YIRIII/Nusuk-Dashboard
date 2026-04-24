@@ -1,4 +1,4 @@
-# Nusuk Social Tracker v2
+# Hadaq Tracker v2
 
 Internal tool to capture and archive Nusuk Card public mentions (Twitter/X + news articles) with Arabic rendering fidelity and audit-grade screenshots.
 
@@ -20,9 +20,9 @@ npm run lint
 
 ## Layout
 
-- `schemas/` — shared Zod schemas (`@nusuk/schemas`)
-- `src/` — Express + pino backend (`@nusuk/api`)
-- `web/` — React + Vite + Tailwind + shadcn/ui (`@nusuk/web`)
+- `schemas/` — shared Zod schemas (`@hadaq/schemas`)
+- `src/` — Express + pino backend (`@hadaq/api`)
+- `web/` — React + Vite + Tailwind + shadcn/ui (`@hadaq/web`)
 - `PROJECT_STATUS/` — pipeline config, roadmap, planning docs, research snapshot
 - `docs/` — legacy design notes (pre-idea-forge)
 

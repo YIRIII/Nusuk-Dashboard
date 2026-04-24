@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Double-click this file to launch Nusuk Social Tracker.
+# Double-click this file to launch Hadaq Tracker.
 # Runs API + Web in one terminal window and opens the browser.
 
 set -e
@@ -31,7 +31,7 @@ if [ "$NODE_MAJOR" != "20" ]; then
 fi
 
 echo ""
-echo "✓ Node $(node --version) · starting Nusuk…"
+echo "✓ Node $(node --version) · starting Hadaq…"
 echo ""
 
 # Kill any leftover servers from a previous run.

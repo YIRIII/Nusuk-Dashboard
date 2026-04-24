@@ -1,6 +1,6 @@
 # Supabase
 
-Database schema + migrations for Nusuk Social Tracker v2.
+Database schema + migrations for Hadaq Tracker v2.
 
 ## Apply migrations
 

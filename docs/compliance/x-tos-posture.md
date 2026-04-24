@@ -4,7 +4,7 @@
 **References:** X Developer Agreement (Sept 2023), X Terms of Service (current)
 
 ## Position
-The Nusuk Social Tracker captures individually supplied public URLs **one at a time, on analyst request** — the same way a human would load the page in a browser, take a screenshot, and save it for their records. This is **capture**, not **scraping**:
+The Hadaq Tracker captures individually supplied public URLs **one at a time, on analyst request** — the same way a human would load the page in a browser, take a screenshot, and save it for their records. This is **capture**, not **scraping**:
 
 - No bulk extraction
 - No enumeration of accounts, hashtags, or search results

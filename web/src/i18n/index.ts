@@ -3,7 +3,7 @@ import { initReactI18next } from 'react-i18next';
 import ar from './ar.json';
 import en from './en.json';
 
-const STORAGE_KEY = 'nusuk.locale';
+const STORAGE_KEY = 'hadaq.locale';
 const stored = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
 const initial = stored === 'en' || stored === 'ar' ? stored : 'en';
 

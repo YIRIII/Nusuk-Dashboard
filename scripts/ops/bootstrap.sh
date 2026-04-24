@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Bootstrap a fresh Ubuntu 22.04 ARM64 VM for Nusuk Social Tracker v2.
+# Bootstrap a fresh Ubuntu 22.04 ARM64 VM for Hadaq Tracker v2.
 # Run as root (or via sudo). Idempotent.
 
 set -euo pipefail
@@ -31,29 +31,29 @@ if ! command -v cloudflared >/dev/null 2>&1; then
   rm -f /tmp/cloudflared.deb
 fi
 
-log "Creating nusuk service user…"
-if ! id nusuk >/dev/null 2>&1; then
-  useradd --system --create-home --shell /usr/sbin/nologin nusuk
-  usermod -aG docker nusuk
+log "Creating hadaq service user…"
+if ! id hadaq >/dev/null 2>&1; then
+  useradd --system --create-home --shell /usr/sbin/nologin hadaq
+  usermod -aG docker hadaq
 fi
 
-log "Installing systemd unit for nusuk-api…"
-cat >/etc/systemd/system/nusuk-api.service <<'UNIT'
+log "Installing systemd unit for hadaq-api…"
+cat >/etc/systemd/system/hadaq-api.service <<'UNIT'
 [Unit]
-Description=Nusuk Social Tracker API
+Description=Hadaq Tracker API
 After=docker.service network-online.target
 Requires=docker.service
 
 [Service]
 Restart=always
 RestartSec=5
-ExecStartPre=-/usr/bin/docker rm -f nusuk-api
-ExecStart=/usr/bin/docker run --rm --name nusuk-api \
+ExecStartPre=-/usr/bin/docker rm -f hadaq-api
+ExecStart=/usr/bin/docker run --rm --name hadaq-api \
   -p 127.0.0.1:3001:3001 \
   -e NODE_ENV=production -e PORT=3001 -e LOG_LEVEL=info \
   --memory=8g --cpus=3 \
-  nusuk-api:latest
-ExecStop=/usr/bin/docker stop nusuk-api
+  hadaq-api:latest
+ExecStop=/usr/bin/docker stop hadaq-api
 
 [Install]
 WantedBy=multi-user.target
@@ -68,7 +68,7 @@ if command -v ufw >/dev/null 2>&1; then
 fi
 
 systemctl daemon-reload
-systemctl enable nusuk-api.service || true
+systemctl enable hadaq-api.service || true
 
 log "Done. Next: install cloudflared service with your tunnel token:"
 log "  sudo cloudflared service install <TOKEN>"

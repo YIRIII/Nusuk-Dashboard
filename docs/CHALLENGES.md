@@ -1,4 +1,4 @@
-# Challenges, Errors & Lessons Learned — Nusuk Tracker v1
+# Challenges, Errors & Lessons Learned — Hadaq Tracker v1
 
 *Written 2026-04-12 as input for the v2 rebuild. Each item is: what broke, root cause, what we did, and what to do differently next time.*
 

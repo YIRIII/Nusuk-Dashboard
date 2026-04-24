@@ -1,4 +1,4 @@
-# Architecture — Nusuk Tracker
+# Architecture — Hadaq Tracker
 
 ## System Overview
 

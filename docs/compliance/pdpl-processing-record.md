@@ -1,4 +1,4 @@
-# PDPL Processing Activity Record — Nusuk Social Tracker v2
+# PDPL Processing Activity Record — Hadaq Tracker v2
 
 **Regulation:** Saudi Personal Data Protection Law (PDPL), effective September 2024
 **Record Version:** 1.0 | **Date:** 2026-04-15

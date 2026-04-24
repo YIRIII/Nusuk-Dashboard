@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
-import { CaptureRequestV2Schema, BatchCaptureRequestSchema } from '@nusuk/schemas';
+import { CaptureRequestV2Schema, BatchCaptureRequestSchema } from '@hadaq/schemas';
 import { validateBody } from '../middleware/validate.js';
 import { CaptureService } from '../capture/puppeteer-service.js';
 import { runFallbackChain, FallbackChainError } from '../capture/fallback-chain.js';

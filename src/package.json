@@ -1,5 +1,5 @@
 {
-  "name": "@nusuk/api",
+  "name": "@hadaq/api",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -13,7 +13,7 @@
     "import:v1": "tsx src/scripts/import-v1.ts"
   },
   "dependencies": {
-    "@nusuk/schemas": "*",
+    "@hadaq/schemas": "*",
     "@supabase/supabase-js": "^2.45.4",
     "archiver": "^7.0.1",
     "dotenv": "^16.4.5",

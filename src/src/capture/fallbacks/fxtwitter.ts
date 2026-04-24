@@ -57,7 +57,7 @@ export async function tryFxTwitter(
     try {
       const res = await fetch(endpoint, {
         signal: ctl.signal,
-        headers: { accept: 'application/json', 'user-agent': 'nusuk-tracker/2 (+internal)' },
+        headers: { accept: 'application/json', 'user-agent': 'hadaq-tracker/2 (+internal)' },
       });
       if (!res.ok) throw new Error('fxtwitter http ' + res.status);
       json = await res.json();

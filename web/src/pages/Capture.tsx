@@ -102,7 +102,7 @@ export function CapturePage() {
   // Persist last batch paste to localStorage so users can restore after
   // submit clears the textarea or after closing the tab.
   useEffect(() => {
-    const saved = localStorage.getItem('nusuk.lastBatchText');
+    const saved = localStorage.getItem('hadaq.lastBatchText');
     if (saved && saved.length > 0) setLastBatchText(saved);
   }, []);
 
@@ -164,7 +164,7 @@ export function CapturePage() {
         }
       } else {
         // Save before any state changes so we can restore the exact paste.
-        localStorage.setItem('nusuk.lastBatchText', batchText);
+        localStorage.setItem('hadaq.lastBatchText', batchText);
         setLastBatchText(batchText);
         const r = await api.batchCapture({ urls: batchUrls, origin });
         setBatchResult(r);

@@ -1,4 +1,4 @@
-# CLAUDE.md — Nusuk Social Tracker v2
+# CLAUDE.md — Hadaq Tracker v2
 
 Project instructions for Claude Code sessions working in this repo.
 
@@ -37,7 +37,7 @@ Key rules:
 
 ## Code conventions
 - TypeScript strict — zero `any`, zero unused. ESLint enforces.
-- Zod schemas are the single source of truth for request/response shapes (in `schemas/src/`, package `@nusuk/schemas`).
+- Zod schemas are the single source of truth for request/response shapes (in `schemas/src/`, package `@hadaq/schemas`).
 - Backend handlers use `validateBody(schema)` / `validateQuery(schema)` middleware; never parse `req.body` directly.
 - Logger: `import { logger } from './logger.js'`. Always use it; never `console.log`.
 - Every request has a trace ID (`x-trace-id` header); include it in log contexts.

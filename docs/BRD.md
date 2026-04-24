@@ -1,4 +1,4 @@
-# Business Requirements Document — Nusuk Tracker
+# Business Requirements Document — Hadaq Tracker
 
 *Version 2.0 — 2026-04-12*
 
@@ -6,7 +6,7 @@
 
 ## 1. Executive Summary
 
-Nusuk Tracker is an internal web application that automates the monitoring and archival of public social-media posts (Twitter/X, Instagram) and news articles related to the **Nusuk Card** (بطاقة نسك) — the digital ID used by pilgrims during Hajj season.
+Hadaq Tracker is an internal web application that automates the monitoring and archival of public social-media posts (Twitter/X, Instagram) and news articles related to the **Nusuk Card** (بطاقة نسك) — the digital ID used by pilgrims during Hajj season.
 
 The tool replaces a fully manual workflow (Excel + folder screenshots) with a paste-a-URL, one-click capture experience, producing a searchable archive suitable for compliance reporting and executive briefings.
 

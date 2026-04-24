@@ -1,5 +1,5 @@
 {
-  "name": "@nusuk/web",
+  "name": "@hadaq/web",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@nusuk/schemas": "*",
+    "@hadaq/schemas": "*",
     "clsx": "^2.1.1",
     "framer-motion": "^11.5.4",
     "i18next": "^23.14.0",

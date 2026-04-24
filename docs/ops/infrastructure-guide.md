@@ -1,4 +1,4 @@
-# Nusuk Dashboard — Infrastructure Guide
+# Hadaq Dashboard — Infrastructure Guide
 
 ## Architecture Overview
 
@@ -9,7 +9,7 @@ Cloudflare (CDN + SSL)
      ↓ Cloudflare Tunnel (encrypted)
 Oracle Cloud VM (141.147.134.176)
      ↓ localhost:3001
-Docker Container (nusuk-api)
+Docker Container (hadaq-api)
      ├── Express API (backend)
      ├── React Frontend (static files)
      ├── Puppeteer + Chromium (screenshots)
@@ -18,7 +18,7 @@ Docker Container (nusuk-api)
 
 ## What Each Service Does
 
-### Domain: nusuk-social.com (Namecheap, ~$10/year)
+### Domain: hadaq-platform.com (Cloudflare Registrar)
 - The custom domain name people type in their browser
 - Nameservers point to Cloudflare (kira.ns.cloudflare.com, langston.ns.cloudflare.com)
 
@@ -64,18 +64,18 @@ Docker Container (nusuk-api)
 | What | Where |
 |------|-------|
 | SSH key | `~/.ssh/nusuk-oracle` (your Mac) |
-| Server env vars | `/tmp/nusuk.env` (on the VM) |
+| Server env vars | `/tmp/hadaq.env` (on the VM) |
 | Cloudflare Tunnel config | `/etc/cloudflared/config.yml` (on the VM) |
 | Tunnel credentials | `/root/.cloudflared/46886459-...json` (on the VM) |
-| Docker image | `nusuk-api:latest` (on the VM) |
-| Supabase keys | In `.env` file (local) and `/tmp/nusuk.env` (VM) |
+| Docker image | `hadaq-api:latest` (on the VM) |
+| Supabase keys | In `.env` file (local) and `/tmp/hadaq.env` (VM) |
 
 ## How to Deploy Changes
 
 After making code changes locally, run one command:
 
 ```bash
-bash /Users/yiri/Desktop/Projects/Nusuk-Dashboard/scripts/ops/deploy.sh
+bash /Users/yiri/Desktop/Projects/Hadaq-Dashboard/scripts/ops/deploy.sh
 ```
 
 This script automatically:
@@ -94,8 +94,8 @@ ssh -i ~/.ssh/nusuk-oracle ubuntu@141.147.134.176
 Useful commands on the server:
 ```bash
 sudo docker ps                          # Check if container is running
-sudo docker logs nusuk-api --tail 30    # View app logs
-sudo docker restart nusuk-api           # Restart without rebuilding
+sudo docker logs hadaq-api --tail 30    # View app logs
+sudo docker restart hadaq-api           # Restart without rebuilding
 sudo systemctl status cloudflared       # Check tunnel status
 sudo systemctl restart cloudflared      # Restart tunnel
 ```
@@ -104,12 +104,12 @@ sudo systemctl restart cloudflared      # Restart tunnel
 
 | URL | What |
 |-----|------|
-| https://nusuk-social.com | Production site (via Cloudflare) |
+| https://hadaq-platform.com | Production site (via Cloudflare) |
 | http://141.147.134.176:3001 | Direct server access (backup) |
 | https://dash.cloudflare.com | Cloudflare dashboard |
 | https://cloud.oracle.com | Oracle Cloud console |
 | https://supabase.com/dashboard | Supabase dashboard |
-| https://github.com/YIRIII/Nusuk-Dashboard | Source code |
+| https://github.com/YIRIII/Hadaq-Dashboard | Source code |
 
 ## Monthly Costs
 
@@ -118,7 +118,7 @@ sudo systemctl restart cloudflared      # Restart tunnel
 | Oracle Cloud VM | $0 (trial, then free tier if Ampere available) |
 | Cloudflare | $0 (free plan) |
 | Supabase | $0 (free tier) |
-| Domain (nusuk-social.com) | ~$10/year |
+| Domain (hadaq-platform.com) | ~$10/year |
 | **Total** | **~$0.83/month** |
 
 ## What to Do if Something Breaks
@@ -126,8 +126,8 @@ sudo systemctl restart cloudflared      # Restart tunnel
 ### Site is down
 1. SSH into the server
 2. Run `sudo docker ps` — is the container running?
-3. If not: `sudo docker start nusuk-api`
-4. Check logs: `sudo docker logs nusuk-api --tail 50`
+3. If not: `sudo docker start hadaq-api`
+4. Check logs: `sudo docker logs hadaq-api --tail 50`
 
 ### Tunnel is down (site loads but shows Cloudflare error)
 1. SSH into the server
@@ -136,7 +136,7 @@ sudo systemctl restart cloudflared      # Restart tunnel
 
 ### Need to redeploy
 1. Make changes locally
-2. Run `bash /Users/yiri/Desktop/Projects/Nusuk-Dashboard/scripts/ops/deploy.sh`
+2. Run `bash /Users/yiri/Desktop/Projects/Hadaq-Dashboard/scripts/ops/deploy.sh`
 
 ### Oracle trial expires
 - Try creating a VM.Standard.A1.Flex (Always Free ARM64) instance

@@ -63,7 +63,7 @@ export function exportRouter(): Router {
       const rows = await fetchRows(ids);
 
       const wb = new ExcelJS.Workbook();
-      wb.creator = 'Nusuk Social Tracker v2';
+      wb.creator = 'Hadaq Tracker';
       wb.created = new Date();
 
       const ws = wb.addWorksheet('Posts', {
@@ -114,7 +114,7 @@ export function exportRouter(): Router {
       );
       res.setHeader(
         'content-disposition',
-        'attachment; filename="nusuk-posts-' + stamp + '.xlsx"',
+        'attachment; filename="hadaq-posts-' + stamp + '.xlsx"',
       );
       res.end(Buffer.from(buf));
     } catch (err) {
@@ -134,7 +134,7 @@ export function exportRouter(): Router {
       res.setHeader('content-type', 'application/zip');
       res.setHeader(
         'content-disposition',
-        'attachment; filename="nusuk-archive-' + stamp + '.zip"',
+        'attachment; filename="hadaq-archive-' + stamp + '.zip"',
       );
 
       const archive = archiver('zip', { zlib: { level: 6 } });
@@ -167,7 +167,7 @@ export function exportRouter(): Router {
 
       archive.append(JSON.stringify(manifest, null, 2), { name: 'metadata.json' });
       archive.append(
-        'Nusuk Social Tracker — archive generated ' +
+        'Hadaq Tracker — archive generated ' +
           new Date().toISOString() +
           '\nPosts: ' +
           rows.length +

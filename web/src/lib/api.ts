@@ -4,7 +4,7 @@
 const API_BASE = import.meta.env.VITE_API_URL ?? '';
 
 function authHeader(): Record<string, string> {
-  const token = localStorage.getItem('nusuk_token');
+  const token = localStorage.getItem('hadaq_token');
   return token ? { Authorization: 'Bearer ' + token } : {};
 }
 

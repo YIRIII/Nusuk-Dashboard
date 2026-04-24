@@ -15,15 +15,15 @@ const SCRIPT = `(function(){
       if (m) into.add('https://x.com/' + m[1] + '/status/' + m[2]);
     }
   }
-  if (W.__nusukGrab){
-    var b = W.__nusukGrab.badge; if (b) b.style.display = (b.style.display === 'none' ? 'flex' : 'none');
+  if (W.__hadaqGrab){
+    var b = W.__hadaqGrab.badge; if (b) b.style.display = (b.style.display === 'none' ? 'flex' : 'none');
     return;
   }
   var urls = new Set();
   extract(document, urls);
   var badge = document.createElement('div');
   badge.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:2147483647;display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;font:600 13px system-ui,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.35);direction:ltr';
-  var label = document.createElement('span'); label.textContent = 'Nusuk: ' + urls.size + ' URLs';
+  var label = document.createElement('span'); label.textContent = 'Hadaq: ' + urls.size + ' URLs';
   var copyBtn = document.createElement('button');
   copyBtn.textContent = 'Copy';
   copyBtn.style.cssText = 'background:#fff;color:#7c3aed;border:0;border-radius:8px;padding:6px 12px;font-weight:700;cursor:pointer';
@@ -35,7 +35,7 @@ const SCRIPT = `(function(){
   closeBtn.style.cssText = 'background:transparent;color:#fff;border:0;font-size:18px;line-height:1;cursor:pointer;padding:0 4px';
   badge.appendChild(label); badge.appendChild(viewBtn); badge.appendChild(copyBtn); badge.appendChild(closeBtn);
   document.body.appendChild(badge);
-  function updateLabel(){ label.textContent = 'Nusuk: ' + urls.size + ' URLs'; }
+  function updateLabel(){ label.textContent = 'Hadaq: ' + urls.size + ' URLs'; }
   var observer = new MutationObserver(function(muts){
     var before = urls.size;
     for (var i = 0; i < muts.length; i++){
@@ -58,13 +58,13 @@ const SCRIPT = `(function(){
     var win = window.open('', '_blank');
     if (!win) { alert('Pop-ups blocked — allow them or use Copy.'); return; }
     win.document.body.style.cssText = 'font:13px/1.6 ui-monospace,monospace;background:#0f0f14;color:#e6e6ef;padding:20px;margin:0';
-    win.document.title = 'Nusuk — ' + urls.size + ' URLs';
+    win.document.title = 'Hadaq — ' + urls.size + ' URLs';
     win.document.body.innerHTML = '<h3 style="font-family:system-ui;margin:0 0 12px">' + urls.size + ' tweet URLs</h3><pre style="white-space:pre-wrap;word-break:break-all">' + Array.from(urls).map(function(u){ return u.replace(/&/g,'&amp;').replace(/</g,'&lt;'); }).join('\\n') + '</pre>';
   });
   closeBtn.addEventListener('click', function(){
-    observer.disconnect(); badge.remove(); W.__nusukGrab = null;
+    observer.disconnect(); badge.remove(); W.__hadaqGrab = null;
   });
-  W.__nusukGrab = { observer: observer, badge: badge, urls: urls };
+  W.__hadaqGrab = { observer: observer, badge: badge, urls: urls };
 })();`;
 
 // URL-encode so it works as a javascript: href.

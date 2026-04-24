@@ -1,4 +1,4 @@
-# Nusuk Tracker — Features & Todo Checklist
+# Hadaq Tracker — Features & Todo Checklist
 
 > Last updated: 2026-04-12
 

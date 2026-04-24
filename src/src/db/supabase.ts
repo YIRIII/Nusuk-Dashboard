@@ -16,7 +16,7 @@ export function getSupabase(): SupabaseClient {
   }
   cached = createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
-    global: { headers: { 'x-application': 'nusuk-api' } },
+    global: { headers: { 'x-application': 'hadaq-api' } },
   });
   logger.info({ url_host: new URL(url).host }, 'supabase client ready');
   return cached;

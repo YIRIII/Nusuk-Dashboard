@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 type Theme = 'light' | 'dark';
-const KEY = 'nusuk.theme';
+const KEY = 'hadaq.theme';
 
 function readStored(): Theme {
   if (typeof localStorage === 'undefined') return 'light';

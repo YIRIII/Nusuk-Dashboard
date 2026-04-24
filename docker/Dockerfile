@@ -34,9 +34,9 @@ COPY schemas ./schemas
 COPY src ./src
 COPY web ./web
 RUN find . -name 'tsconfig.tsbuildinfo' -delete \
- && npm -w @nusuk/schemas run build \
- && npm -w @nusuk/api run build \
- && npm -w @nusuk/web run build
+ && npm -w @hadaq/schemas run build \
+ && npm -w @hadaq/api run build \
+ && npm -w @hadaq/web run build
 
 # ---- runtime stage ----
 FROM base AS runtime

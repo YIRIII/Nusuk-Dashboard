@@ -1,8 +1,8 @@
 {
-  "name": "nusuk-social-tracker-v2",
+  "name": "hadaq-platform",
   "private": true,
   "version": "0.0.0",
-  "description": "Internal Nusuk Card social/news mention tracker — audit-grade capture with Arabic rendering fidelity.",
+  "description": "Internal Nusuk Card social/news mention tracker — Hadaq Platform — audit-grade capture with Arabic rendering fidelity.",
   "type": "module",
   "workspaces": [
     "schemas",

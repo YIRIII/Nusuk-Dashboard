@@ -7,8 +7,8 @@ Playwright visual-regression suite covering the Arabic shaping edge cases v1 fai
 Run inside the production Docker image (ARM64) so baselines are captured on the exact Chromium + font set that ships:
 
 ```bash
-docker build -t nusuk-api:local -f docker/Dockerfile .
-docker run --rm -v "$PWD:/work" -w /work nusuk-api:local \
+docker build -t hadaq-api:local -f docker/Dockerfile .
+docker run --rm -v "$PWD:/work" -w /work hadaq-api:local \
   npx playwright test --update-snapshots
 ```
 

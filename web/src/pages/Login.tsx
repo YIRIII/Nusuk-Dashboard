@@ -26,7 +26,7 @@ export function LoginPage({ onLogin }: Props) {
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-8 shadow-lg">
         <div className="mb-6">
-          <h1 className="text-xl font-bold">Nusuk Social</h1>
+          <h1 className="text-xl font-bold">Hadaq Platform</h1>
           <p className="text-xs text-muted-foreground">{t('auth.login_subtitle')}</p>
         </div>
 

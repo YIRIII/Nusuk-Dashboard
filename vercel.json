@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm ci && npm -w @nusuk/schemas run build && npm -w @nusuk/web run build",
+  "buildCommand": "npm ci && npm -w @hadaq/schemas run build && npm -w @hadaq/web run build",
   "outputDirectory": "web/dist",
   "installCommand": "npm ci --workspaces --include-workspace-root",
   "framework": "vite",

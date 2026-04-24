@@ -1,4 +1,4 @@
-# Changelog — Nusuk Social Tracker v2
+# Changelog — Hadaq Tracker v2
 
 All notable changes since the initial commit (`cf76e83`). Dates are calendar, not release.
 

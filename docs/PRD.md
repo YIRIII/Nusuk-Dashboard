@@ -1,4 +1,4 @@
-# Product Requirements Document — Nusuk Tracker
+# Product Requirements Document — Hadaq Tracker
 
 *Version 2.0 — 2026-04-12*
 

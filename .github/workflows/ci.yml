@@ -23,9 +23,9 @@ jobs:
       - run: npm ci
       # tsc -b at the root should handle project-reference ordering, but on
       # fresh CI runners it silently skipped schemas emit, leading to TS2307
-      # "Cannot find module '@nusuk/schemas'" in downstream projects. Forcing
+      # "Cannot find module '@hadaq/schemas'" in downstream projects. Forcing
       # schemas to build first makes the typecheck step deterministic.
-      - name: Build @nusuk/schemas
+      - name: Build @hadaq/schemas
         working-directory: schemas
         run: npx tsc -b --force
       - run: npm run typecheck
@@ -53,4 +53,4 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           # Build args / tags kept minimal; CI is a parity check, not a registry push.
-          tags: nusuk-api:ci
+          tags: hadaq-api:ci

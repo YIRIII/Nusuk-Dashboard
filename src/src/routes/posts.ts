@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { PostsListQuerySchema, PostPatchSchema } from '@nusuk/schemas';
+import { PostsListQuerySchema, PostPatchSchema } from '@hadaq/schemas';
 import { validateQuery, validateBody } from '../middleware/validate.js';
 import {
   listPosts,
@@ -32,7 +32,7 @@ export function postsRouter(): Router {
   const router = Router();
 
   router.get('/posts', validateQuery(PostsListQuerySchema), async (req, res) => {
-    const q = (req as unknown as ValidatedQueryReq<import('@nusuk/schemas').PostsListQuery>)
+    const q = (req as unknown as ValidatedQueryReq<import('@hadaq/schemas').PostsListQuery>)
       .validatedQuery;
     try {
       const { rows, total } = await listPosts({
