@@ -287,7 +287,7 @@ export async function listPosts(opts: ListPostsOptions): Promise<{ rows: PostRow
     // ilike against url + metadata->>text gives a simple full-text feel.
     // For real search switch to tsvector in a later migration.
     query = query.or(
-      'url.ilike.%' + opts.q + '%,title_override.ilike.%' + opts.q + '%,metadata->>text.ilike.%' + opts.q + '%',
+      'url.ilike.%' + opts.q + '%,title_override.ilike.%' + opts.q + '%,metadata->>text.ilike.%' + opts.q + '%,metadata->>author_handle.ilike.%' + opts.q + '%',
     );
   }
 

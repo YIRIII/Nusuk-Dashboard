@@ -31,7 +31,7 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
   const [params, setParams] = useSearchParams();
   const { mutate } = useSWRConfig();
 
-  const [q, setQ] = useState('');
+  const [q, setQ] = useState(params.get('q') ?? '');
   const [kind, setKind] = useState<KindFilter>('all');
   const [review, setReview] = useState<ReviewFilter>((params.get('review') as ReviewFilter) ?? 'all');
   const [origin, setOrigin] = useState<OriginFilter>('all');
@@ -39,7 +39,9 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
   const [category, setCategory] = useState<CategoryFilter>(
     (params.get('category') as CategoryFilter) ?? 'all',
   );
-  const [dateRange, setDateRange] = useState<DateFilter>('all');
+  const [dateRange, setDateRange] = useState<DateFilter>(
+    (params.get('date_range') as DateFilter) ?? 'all',
+  );
   const [sort, setSort] = useState<SortMode>('posted_desc');
   const [selectedTag, setSelectedTag] = useState<string>(params.get('tag') ?? '');
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -55,7 +57,7 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
       date_range: dateRange,
       sort,
       ...(q ? { q } : {}),
-      limit: 100,
+      limit: 500,
     }),
     [kind, review, origin, company, category, dateRange, sort, q],
   );

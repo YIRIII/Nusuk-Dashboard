@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import {
@@ -25,10 +26,12 @@ interface Tile {
   Icon: typeof FileText;
   accent: string;
   iconBg: string;
+  link?: string;
 }
 
 export function DashboardPage() {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
   const { data, isLoading } = usePosts({ sort: 'captured_desc', limit: 500 });
   const { data: companiesData } = useCompanies();
@@ -99,6 +102,7 @@ export function DashboardPage() {
       Icon: CalendarDays,
       accent: 'text-sky-500',
       iconBg: 'bg-sky-500/10',
+      link: '/posts?date_range=7d',
     },
     {
       k: 'dashboard.kpi.needs_review',
@@ -107,6 +111,7 @@ export function DashboardPage() {
       Icon: AlertCircle,
       accent: 'text-rose-500',
       iconBg: 'bg-rose-500/10',
+      link: '/posts?review=unreviewed',
     },
   ];
 
@@ -176,9 +181,15 @@ export function DashboardPage() {
         animate="visible"
         className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-5"
       >
-        {tiles.map(({ k, v, sub, Icon, accent, iconBg }) => (
+        {tiles.map(({ k, v, sub, Icon, accent, iconBg, link }) => (
           <motion.div key={k} variants={staggerItem}>
-            <div className="group relative overflow-hidden rounded-xl border border-border bg-card p-3 sm:p-5 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg">
+            <div
+              onClick={link ? () => navigate(link) : undefined}
+              className={
+                'group relative overflow-hidden rounded-xl border border-border bg-card p-3 sm:p-5 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg' +
+                (link ? ' cursor-pointer' : '')
+              }
+            >
               <div className="flex items-start justify-between">
                 <div className={'flex h-9 w-9 items-center justify-center rounded-lg ' + iconBg}>
                   <Icon className={'h-4 w-4 ' + accent} />
@@ -222,7 +233,8 @@ export function DashboardPage() {
                   initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.25, delay: i * 0.05 }}
-                  className="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-accent/40"
+                  onClick={() => navigate('/posts?q=' + encodeURIComponent(handle))}
+                  className="flex cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors hover:bg-accent/40"
                 >
                   <div
                     className={
