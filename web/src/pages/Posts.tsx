@@ -57,7 +57,7 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
       date_range: dateRange,
       sort,
       ...(q ? { q } : {}),
-      limit: 2000,
+      limit: 1000,
     }),
     [kind, review, origin, company, category, dateRange, sort, q],
   );

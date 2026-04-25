@@ -33,7 +33,7 @@ export function DashboardPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
-  const { data, isLoading } = usePosts({ sort: 'captured_desc', limit: 2000 });
+  const { data, isLoading } = usePosts({ sort: 'captured_desc', limit: 1000 });
   const { data: companiesData } = useCompanies();
   void companiesData;
   const allRows = data?.rows ?? [];
