@@ -20,6 +20,7 @@ import {
 import { cn } from '@/lib/utils';
 import { setLocale } from '@/i18n';
 import { useTheme } from '@/hooks/useTheme';
+import { HadaqLogo } from '@/components/HadaqLogo';
 
 interface NavItem {
   to: string;
@@ -76,7 +77,13 @@ export function Sidebar({ isAdmin, onLogout }: SidebarProps) {
         open ? "translate-x-0" : "-translate-x-full rtl:translate-x-full"
       )}>
         <div className="flex items-center justify-between px-5 py-5 border-b border-border">
-          <p className="text-sm font-semibold">Hadaq Platform</p>
+          <div className="flex items-center gap-2.5">
+            <HadaqLogo size={36} className="text-foreground" />
+            <div className="leading-tight">
+              <p className="text-sm font-semibold">{"منصة حَدَق"}</p>
+              <p className="text-[10px] text-muted-foreground">Hadaq Platform</p>
+            </div>
+          </div>
           <button onClick={() => setOpen(false)} className="md:hidden text-muted-foreground">
             <X className="h-5 w-5" />
           </button>

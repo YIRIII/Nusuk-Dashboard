@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LogIn } from 'lucide-react';
+import { HadaqLogo } from '@/components/HadaqLogo';
 
 interface Props {
   onLogin: (email: string, password: string) => Promise<boolean>;
@@ -25,9 +26,11 @@ export function LoginPage({ onLogin }: Props) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-8 shadow-lg">
-        <div className="mb-6">
-          <h1 className="text-xl font-bold">Hadaq Platform</h1>
-          <p className="text-xs text-muted-foreground">{t('auth.login_subtitle')}</p>
+        <div className="mb-6 flex flex-col items-center text-center">
+          <HadaqLogo size={48} className="text-foreground mb-3" />
+          <h1 className="text-xl font-bold">{"منصة حَدَق"}</h1>
+          <p className="text-sm text-muted-foreground">Hadaq Platform</p>
+          <p className="text-xs text-muted-foreground mt-1">{t('auth.login_subtitle')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
