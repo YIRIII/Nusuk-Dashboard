@@ -2,9 +2,11 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePosts } from '@/hooks/usePosts';
 import type { Post, CompanyCategory } from '@/lib/api';
-import { Download, Printer } from 'lucide-react';
+import { Download, Printer, Image } from 'lucide-react';
 import { buildWeeklyPptx, type ReportData } from '@/lib/reportPptx';
+import { openPosterPreview, buildPosterPptx, type PosterData } from '@/lib/reportPoster';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { countHashtags } from '@/lib/hashtags';
 
 type Category = CompanyCategory | 'unclassified';
@@ -102,7 +104,9 @@ export function ReportWeeklyPage() {
   const [startISO, setStartISO] = useState(() => defaultStart.toISOString().slice(0, 10));
   const [endISO, setEndISO] = useState(() => todayMidnight.toISOString().slice(0, 10));
   const [downloading, setDownloading] = useState(false);
+  const [posterLoading, setPosterLoading] = useState(false);
   const [dateSystem, setDateSystem] = useState<DateSystem>('gregorian');
+  const [showLogo, setShowLogo] = useState(true);
 
   const start = useMemo(() => new Date(startISO + 'T00:00:00'), [startISO]);
   const end = useMemo(() => {
@@ -294,56 +298,84 @@ export function ReportWeeklyPage() {
     if (downloading) return;
     setDownloading(true);
     try {
-      const endInclusive = new Date(end.getTime() - 1);
-      const categoryLabels: Record<Category, string> = {
-        inner: t('posts.category.inner'),
-        outer: t('posts.category.outer'),
-        general: t('posts.category.general'),
-        other: t('posts.category.other'),
-        unclassified: t('posts.category.unclassified'),
-      };
-      const reportData: ReportData = {
-        startLabel: fmtDate(start, locale),
-        endLabel: fmtDate(endInclusive, locale),
-        hijriLabel: fmtHijriRange(start, endInclusive),
-        headline,
-        total,
-        wow,
-        prevTotal,
-        busiestLabel: busiest ? fmtWeekdaySys(busiest.date, locale, dateSystem) : '',
-        busiestCount: busiest?.count ?? 0,
-        uniqueHandles,
-        categoryOrder: CATEGORY_ORDER,
-        categoryCounts: breakdown,
-        categoryPrevCounts: prevBreakdown,
-        categoryLabels,
-        topVoices,
-        topHashtags,
-        highlights,
-        datePostedLabel: (p) => fmtDateSys(postDate(p), locale, dateSystem),
-        labels: {
-          brand: t('reports.weekly.brand'),
-          execSummary: t('reports.weekly.exec_summary'),
-          headline: t('reports.weekly.headline'),
-          kpiTotal: t('reports.weekly.kpi.total'),
-          kpiWow: t('reports.weekly.kpi.wow'),
-          kpiPeak: t('reports.weekly.kpi.peak'),
-          kpiUnique: t('reports.weekly.kpi.unique'),
-          categories: t('reports.weekly.categories'),
-          topVoices: t('reports.weekly.top_voices'),
-          topHashtags: t('reports.weekly.top_hashtags'),
-          highlights: t('reports.weekly.highlights'),
-          noScreenshot: t('reports.weekly.no_screenshot'),
-          period: t('reports.weekly.period'),
-          originIndividual: t('posts.origin.individual'),
-        },
-        isRtl: isAr,
-        dateSystem,
-      };
       const fileName = 'hadaq-weekly-' + startISO + '-to-' + endISO + '.pptx';
-      await buildWeeklyPptx(reportData, fileName);
+      await buildWeeklyPptx(buildReportData(), fileName);
     } finally {
       setDownloading(false);
+    }
+  }
+
+  function buildPosterData(reportData: ReportData): PosterData {
+    return { ...reportData, totalCaptured: allRows.length, showLogo };
+  }
+
+  function buildReportData(): ReportData {
+    const endInclusive = new Date(end.getTime() - 1);
+    const categoryLabels: Record<Category, string> = {
+      inner: t('posts.category.inner'),
+      outer: t('posts.category.outer'),
+      general: t('posts.category.general'),
+      other: t('posts.category.other'),
+      unclassified: t('posts.category.unclassified'),
+    };
+    return {
+      startLabel: fmtDate(start, locale),
+      endLabel: fmtDate(endInclusive, locale),
+      hijriLabel: fmtHijriRange(start, endInclusive),
+      headline,
+      total,
+      wow,
+      prevTotal,
+      busiestLabel: busiest ? fmtWeekdaySys(busiest.date, locale, dateSystem) : '',
+      busiestCount: busiest?.count ?? 0,
+      uniqueHandles,
+      categoryOrder: CATEGORY_ORDER,
+      categoryCounts: breakdown,
+      categoryPrevCounts: prevBreakdown,
+      categoryLabels,
+      topVoices,
+      topHashtags,
+      highlights,
+      datePostedLabel: (p) => fmtDateSys(postDate(p), locale, dateSystem),
+      labels: {
+        brand: t('reports.weekly.brand'),
+        execSummary: t('reports.weekly.exec_summary'),
+        headline: t('reports.weekly.headline'),
+        kpiTotal: t('reports.weekly.kpi.total'),
+        kpiWow: t('reports.weekly.kpi.wow'),
+        kpiPeak: t('reports.weekly.kpi.peak'),
+        kpiUnique: t('reports.weekly.kpi.unique'),
+        categories: t('reports.weekly.categories'),
+        topVoices: t('reports.weekly.top_voices'),
+        topHashtags: t('reports.weekly.top_hashtags'),
+        highlights: t('reports.weekly.highlights'),
+        noScreenshot: t('reports.weekly.no_screenshot'),
+        period: t('reports.weekly.period'),
+        originIndividual: t('posts.origin.individual'),
+      },
+      isRtl: isAr,
+      dateSystem,
+    };
+  }
+
+  async function handlePosterPreview() {
+    if (posterLoading) return;
+    setPosterLoading(true);
+    try {
+      await openPosterPreview(buildPosterData(buildReportData()));
+    } finally {
+      setPosterLoading(false);
+    }
+  }
+
+  async function handlePosterPptx() {
+    if (posterLoading) return;
+    setPosterLoading(true);
+    try {
+      const fileName = 'hadaq-poster-' + startISO + '-to-' + endISO + '.pptx';
+      await buildPosterPptx(buildPosterData(buildReportData()), fileName);
+    } finally {
+      setPosterLoading(false);
     }
   }
 
@@ -419,6 +451,10 @@ export function ReportWeeklyPage() {
               { value: 'hijri', label: t('reports.weekly.cal.hijri') },
             ]}
           />
+          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+            <Checkbox checked={showLogo} onChange={setShowLogo} />
+            {t('reports.weekly.show_logo')}
+          </label>
           <button
             onClick={() => window.print()}
             className="inline-flex h-9 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium hover:bg-accent"
@@ -433,6 +469,22 @@ export function ReportWeeklyPage() {
           >
             <Download className="h-4 w-4" />
             {downloading ? t('reports.weekly.downloading') : t('reports.weekly.download_pptx')}
+          </button>
+          <button
+            onClick={handlePosterPreview}
+            disabled={posterLoading || thisWeek.length === 0}
+            className="inline-flex h-9 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium hover:bg-accent disabled:opacity-60"
+          >
+            <Image className="h-4 w-4" />
+            {posterLoading ? t('reports.weekly.downloading') : t('reports.weekly.download_poster')}
+          </button>
+          <button
+            onClick={handlePosterPptx}
+            disabled={posterLoading || thisWeek.length === 0}
+            className="inline-flex h-9 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium hover:bg-accent disabled:opacity-60"
+          >
+            <Download className="h-4 w-4" />
+            {posterLoading ? t('reports.weekly.downloading') : t('reports.weekly.download_poster_pptx')}
           </button>
         </div>
       </div>

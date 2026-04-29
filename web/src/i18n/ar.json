@@ -39,6 +39,13 @@
   "reports.weekly.highlights": "أبرز المنشورات",
   "reports.weekly.highlights_sub": "{{n}} منشوراً مختاراً",
   "reports.weekly.highlights_empty": "لا منشورات ضمن النطاق المحدد.",
+  "reports.weekly.kpi.total_captured": "إجمالي المرصود",
+  "reports.weekly.kpi.total_captured_sub": "جميع المنشورات في الأرشيف",
+  "reports.weekly.show_logo": "إظهار الشعار",
+  "reports.weekly.download_poster": "بوستر PDF",
+  "reports.weekly.download_poster_pptx": "بوستر PPTX",
+  "reports.weekly.poster_confidential": "سري — للاستخدام الداخلي",
+  "reports.weekly.poster_auto": "تقرير آلي — منصة حَدَق",
   "reports.weekly.cal.gregorian": "ميلادي",
   "reports.weekly.cal.hijri": "هجري",
 

@@ -39,6 +39,13 @@
   "reports.weekly.highlights": "Highlights",
   "reports.weekly.highlights_sub": "{{n}} featured posts",
   "reports.weekly.highlights_empty": "No posts in the selected range.",
+  "reports.weekly.kpi.total_captured": "Total captured",
+  "reports.weekly.kpi.total_captured_sub": "All-time posts in archive",
+  "reports.weekly.show_logo": "Show logo",
+  "reports.weekly.download_poster": "Poster PDF",
+  "reports.weekly.download_poster_pptx": "Poster PPTX",
+  "reports.weekly.poster_confidential": "Confidential — Internal use only",
+  "reports.weekly.poster_auto": "Auto-generated report — Hadaq Platform",
   "reports.weekly.cal.gregorian": "Gregorian",
   "reports.weekly.cal.hijri": "Hijri",
 
