@@ -149,13 +149,13 @@ body{font-family:'Cairo',sans-serif;background:#f5ede3;display:flex;justify-cont
   <div style="padding:12px 20px 8px;position:relative">
     <div style="position:absolute;inset:0;background:linear-gradient(160deg,rgba(215,165,98,0.08) 0%,transparent 60%);pointer-events:none"></div>
     <div style="display:flex;align-items:center;justify-content:space-between;position:relative">
-      <div style="display:flex;align-items:center;gap:10px">
-        ${data.showLogo ? logoSvg : ''}
+      ${data.showLogo ? `<div style="display:flex;align-items:center;gap:10px">
+        ${logoSvg}
         <div>
           <div style="font-size:16px;font-weight:700;color:#1a1511;line-height:1.2">${data.isRtl ? 'منصة حَدَق' : 'Hadaq Platform'}</div>
           <div style="font-size:8px;font-weight:600;color:#d7a562;letter-spacing:2px">${data.isRtl ? 'HADAQ PLATFORM' : 'منصة حَدَق'}</div>
         </div>
-      </div>
+      </div>` : '<div></div>'}
       <div style="background:rgba(255,255,255,0.5);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:0.5px solid rgba(215,165,98,0.1);border-radius:8px;padding:5px 12px;text-align:start">
         <div style="font-size:7px;color:#8a7e72;font-weight:600;letter-spacing:1px;text-transform:uppercase">${esc(data.labels.period)}</div>
         <div style="font-size:12px;font-weight:700;color:#1a1511">${esc(primaryDate)}</div>
@@ -241,20 +241,19 @@ export async function buildPosterPptx(data: PosterData, fileName: string): Promi
     line: { type: 'none' },
   });
 
-  const brandX = data.showLogo ? 0.72 : 0.3;
   if (data.showLogo) {
     const logoSvgPptx = '<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M50 15 A35 35 0 0 0 22 25" stroke="#d7a562" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.3"/><path d="M50 15 A35 35 0 0 1 78 25" stroke="#d7a562" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.3"/><path d="M50 28C32 28 18 50 18 50C18 50 32 72 50 72C68 72 82 50 82 50C82 50 68 28 50 28Z" stroke="#d7a562" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="50" cy="50" r="12" stroke="#d7a562" stroke-width="2"/><circle cx="50" cy="50" r="4.5" fill="#d7a562"/></svg>';
     const logoDataUri = 'data:image/svg+xml;base64,' + btoa(logoSvgPptx);
     s.addImage({ data: logoDataUri, x: 0.3, y: 0.15, w: 0.35, h: 0.35 });
+    s.addText(data.isRtl ? 'منصة حَدَق' : 'Hadaq Platform', {
+      x: 0.72, y: 0.2, w: 3, h: 0.3,
+      fontSize: 14, bold: true, color: '1A1511',
+    });
+    s.addText(data.isRtl ? 'HADAQ PLATFORM' : 'منصة حَدَق', {
+      x: 0.72, y: 0.48, w: 3, h: 0.15,
+      fontSize: 7, bold: true, color: 'D7A562', charSpacing: 1.5,
+    });
   }
-  s.addText(data.isRtl ? 'منصة حَدَق' : 'Hadaq Platform', {
-    x: brandX, y: 0.2, w: 3, h: 0.3,
-    fontSize: 14, bold: true, color: '1A1511',
-  });
-  s.addText(data.isRtl ? 'HADAQ PLATFORM' : 'منصة حَدَق', {
-    x: brandX, y: 0.48, w: 3, h: 0.15,
-    fontSize: 7, bold: true, color: 'D7A562', charSpacing: 1.5,
-  });
 
   const isHijri = data.dateSystem === 'hijri';
   const primaryDate = isHijri ? data.hijriLabel : data.startLabel + ' — ' + data.endLabel;
