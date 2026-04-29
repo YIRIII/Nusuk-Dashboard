@@ -6,9 +6,9 @@ export interface CompanyInfo {
 export const COMPANY_NAMES: Record<string, CompanyInfo> = {
   // ── حجاج الخارج (Outer) ──
   '@Albaitguests': { ar: 'ضيوف البيت', category: 'outer' },
-  '@Almasiah_SA': { ar: 'المسايح', category: 'outer' },
+  '@Almasiah_SA': { ar: 'الماسية', category: 'outer' },
   '@DaleelAlzowar': { ar: 'دليل الزوار', category: 'outer' },
-  '@DurHajj': { ar: 'دُر الحج', category: 'outer' },
+  '@DurHajj': { ar: 'دور الضيافة', category: 'outer' },
   '@EkramAldyf': { ar: 'إكرام الضيف', category: 'outer' },
   '@Holidayinbakkah': { ar: 'هوليداي إن بكة', category: 'outer' },
   '@IthraaAlJoud': { ar: 'إثراء الجود', category: 'outer' },
@@ -20,11 +20,11 @@ export const COMPANY_NAMES: Record<string, CompanyInfo> = {
   '@alrifadah': { ar: 'الرفادة', category: 'outer' },
   '@bushra_deyafah': { ar: 'بشرى الضيافة', category: 'outer' },
   '@ithraalkhair': { ar: 'إثراء الخير', category: 'outer' },
-  '@mcdcHajj': { ar: 'الشركة المتحدة لتنمية مكة', category: 'outer' },
-  '@rakeencom': { ar: 'راكين', category: 'outer' },
-  '@rawafmina': { ar: 'روافد منى', category: 'outer' },
-  '@rifadteaa': { ar: 'رفادة طيبة', category: 'outer' },
-  '@sana_7ajj': { ar: 'سنا الحج', category: 'outer' },
+  '@mcdcHajj': { ar: 'شركة مكة للانشاء والتعمير', category: 'outer' },
+  '@rakeencom': { ar: 'ركين', category: 'outer' },
+  '@rawafmina': { ar: 'رواف منى', category: 'outer' },
+  '@rifadteaa': { ar: 'رفاد', category: 'outer' },
+  '@sana_7ajj': { ar: 'سنا', category: 'outer' },
 
   // ── حجاج الداخل (Inner) ──
   '@AletqanSa': { ar: 'الإتقان', category: 'inner' },

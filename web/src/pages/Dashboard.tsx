@@ -185,17 +185,23 @@ export function DashboardPage() {
             }}
             className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground"
           >
-            <option value="" disabled>{t('posts.company_all')}</option>
-            <optgroup label={t('posts.category.outer')}>
-              {outerCompanies.map(([handle, info]) => (
-                <option key={handle} value={handle}>{info.ar}</option>
-              ))}
-            </optgroup>
-            <optgroup label={t('posts.category.inner')}>
-              {innerCompanies.map(([handle, info]) => (
-                <option key={handle} value={handle}>{info.ar}</option>
-              ))}
-            </optgroup>
+            <option value="" disabled>{t('posts.category.outer')}</option>
+            {outerCompanies.map(([handle, info]) => (
+              <option key={handle} value={handle}>{info.ar}</option>
+            ))}
+          </select>
+          <select
+            defaultValue=""
+            onChange={(e) => {
+              if (e.target.value) navigate('/posts?handle=' + encodeURIComponent(e.target.value));
+              e.target.value = '';
+            }}
+            className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground"
+          >
+            <option value="" disabled>{t('posts.category.inner')}</option>
+            {innerCompanies.map(([handle, info]) => (
+              <option key={handle} value={handle}>{info.ar}</option>
+            ))}
           </select>
         </div>
       </div>
