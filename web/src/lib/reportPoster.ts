@@ -132,7 +132,7 @@ export function buildPosterHtml(data: PosterData, screenshotDataUris: Map<string
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>${esc(data.labels.execSummary)}</title>
+<title>${esc(data.labels.execSummaryDated)}</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap');
 *{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
