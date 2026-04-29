@@ -294,6 +294,15 @@ export function ReportWeeklyPage() {
     [thisWeek],
   );
 
+  const datedTitle = useMemo(() => {
+    const endInclusive = new Date(end.getTime() - 1);
+    const hijriStart = fmtHijri(start);
+    const hijriEnd = fmtHijri(endInclusive);
+    return isAr
+      ? `التفاعل الاعلامي من ${hijriStart} الى ${hijriEnd}`
+      : `Media Engagement from ${hijriStart} to ${hijriEnd}`;
+  }, [start, end, isAr]);
+
   async function handleDownloadPptx() {
     if (downloading) return;
     setDownloading(true);
@@ -509,7 +518,7 @@ export function ReportWeeklyPage() {
                 {t('reports.weekly.brand')}
               </p>
               <h2 className="mt-1 text-3xl font-bold tracking-tight">
-                {t('reports.weekly.exec_summary')}
+                {datedTitle}
               </h2>
             </div>
             <div className="rounded-xl border border-border bg-background/60 px-4 py-3 text-end shadow-sm">
