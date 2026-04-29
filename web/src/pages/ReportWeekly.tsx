@@ -311,6 +311,11 @@ export function ReportWeeklyPage() {
 
   function buildReportData(): ReportData {
     const endInclusive = new Date(end.getTime() - 1);
+    const hijriStart = fmtHijri(start);
+    const hijriEnd = fmtHijri(endInclusive);
+    const datedTitle = isAr
+      ? `التفاعل الاعلامي من ${hijriStart} الى ${hijriEnd}`
+      : `Media Engagement from ${hijriStart} to ${hijriEnd}`;
     const categoryLabels: Record<Category, string> = {
       inner: t('posts.category.inner'),
       outer: t('posts.category.outer'),
@@ -340,8 +345,10 @@ export function ReportWeeklyPage() {
       labels: {
         brand: t('reports.weekly.brand'),
         execSummary: t('reports.weekly.exec_summary'),
+        execSummaryDated: datedTitle,
         headline: t('reports.weekly.headline'),
         kpiTotal: t('reports.weekly.kpi.total'),
+        kpiTotalCaptured: t('reports.weekly.kpi.total_captured'),
         kpiWow: t('reports.weekly.kpi.wow'),
         kpiPeak: t('reports.weekly.kpi.peak'),
         kpiUnique: t('reports.weekly.kpi.unique'),
@@ -349,6 +356,7 @@ export function ReportWeeklyPage() {
         topVoices: t('reports.weekly.top_voices'),
         topHashtags: t('reports.weekly.top_hashtags'),
         highlights: t('reports.weekly.highlights'),
+        highlightsDesc: t('reports.weekly.highlights_desc'),
         noScreenshot: t('reports.weekly.no_screenshot'),
         period: t('reports.weekly.period'),
         originIndividual: t('posts.origin.individual'),
@@ -574,7 +582,7 @@ export function ReportWeeklyPage() {
                 {t('reports.weekly.categories')}
               </p>
               <div className="mt-4 space-y-3">
-                {CATEGORY_ORDER.map((c) => {
+                {CATEGORY_ORDER.filter((c) => breakdown[c] > 0).map((c) => {
                   const n = breakdown[c];
                   const pct = total > 0 ? Math.round((n / total) * 100) : 0;
                   const delta = n - prevBreakdown[c];

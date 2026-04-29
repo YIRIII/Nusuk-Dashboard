@@ -14,6 +14,7 @@ import {
 import { usePosts, useCompanies } from '@/hooks/usePosts';
 import { staggerGrid, staggerItem } from '@/lib/motion';
 import { AnalyticsCharts } from '@/components/charts/AnalyticsCharts';
+import { COMPANY_NAMES } from '@/lib/companyNames';
 
 // Reserving 'government' for future expansion — users may want to split
 // government/official entities out of the general bucket later.
@@ -36,6 +37,8 @@ export function DashboardPage() {
   const { data, isLoading } = usePosts({ sort: 'captured_desc', limit: 1000 });
   const { data: companiesData } = useCompanies();
   void companiesData;
+  const outerCompanies = Object.entries(COMPANY_NAMES).filter(([, c]) => c.category === 'outer').sort((a, b) => a[1].ar.localeCompare(b[1].ar, 'ar'));
+  const innerCompanies = Object.entries(COMPANY_NAMES).filter(([, c]) => c.category === 'inner').sort((a, b) => a[1].ar.localeCompare(b[1].ar, 'ar'));
   const allRows = data?.rows ?? [];
 
   // Apply the category filter to everything below — KPIs, charts, breakdown.
@@ -146,32 +149,54 @@ export function DashboardPage() {
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">{t('dashboard.welcome')}</p>
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          {categories.map(({ key, count }) => {
-            const active = categoryFilter === key;
-            return (
-              <button
-                key={key}
-                onClick={() => setCategoryFilter(key)}
-                className={
-                  'inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ' +
-                  (active
-                    ? 'bg-primary/15 text-primary border-primary/40'
-                    : 'bg-accent/40 text-muted-foreground border-border hover:bg-accent hover:text-foreground')
-                }
-              >
-                {t('posts.category.' + key)}
-                <span
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap gap-1.5">
+            {categories.map(({ key, count }) => {
+              const active = categoryFilter === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setCategoryFilter(key)}
                   className={
-                    'rounded-md px-1.5 py-0.5 text-[10px] font-semibold ' +
-                    (active ? 'bg-primary/20 text-primary' : 'bg-background/60 text-muted-foreground')
+                    'inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ' +
+                    (active
+                      ? 'bg-primary/15 text-primary border-primary/40'
+                      : 'bg-accent/40 text-muted-foreground border-border hover:bg-accent hover:text-foreground')
                   }
                 >
-                  {count}
-                </span>
-              </button>
-            );
-          })}
+                  {t('posts.category.' + key)}
+                  <span
+                    className={
+                      'rounded-md px-1.5 py-0.5 text-[10px] font-semibold ' +
+                      (active ? 'bg-primary/20 text-primary' : 'bg-background/60 text-muted-foreground')
+                    }
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <select
+            defaultValue=""
+            onChange={(e) => {
+              if (e.target.value) navigate('/posts?handle=' + encodeURIComponent(e.target.value));
+              e.target.value = '';
+            }}
+            className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground"
+          >
+            <option value="" disabled>{t('posts.company_all')}</option>
+            <optgroup label={t('posts.category.outer')}>
+              {outerCompanies.map(([handle, info]) => (
+                <option key={handle} value={handle}>{info.ar}</option>
+              ))}
+            </optgroup>
+            <optgroup label={t('posts.category.inner')}>
+              {innerCompanies.map(([handle, info]) => (
+                <option key={handle} value={handle}>{info.ar}</option>
+              ))}
+            </optgroup>
+          </select>
         </div>
       </div>
 

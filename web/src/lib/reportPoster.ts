@@ -47,17 +47,18 @@ export function buildPosterHtml(data: PosterData, screenshotDataUris: Map<string
   const wowColor = data.wow === null ? '#1a1511' : data.wow >= 0 ? '#038061' : '#d95e4a';
 
   const kpis = [
-    { v: data.totalCaptured.toString(), l: data.isRtl ? 'إجمالي المرصود' : 'Total captured' },
+    { v: data.totalCaptured.toString(), l: data.labels.kpiTotalCaptured },
     { v: data.total.toString(), l: data.labels.kpiTotal },
     { v: wowStr, l: data.isRtl ? 'مقارنة بالأسبوع الماضي' : data.labels.kpiWow, color: wowColor },
     { v: data.busiestLabel || '—', l: data.labels.kpiPeak, small: true },
     { v: data.uniqueHandles.toString(), l: data.labels.kpiUnique },
   ];
 
-  const maxCat = Math.max(1, ...data.categoryOrder.map(c => data.categoryCounts[c] ?? 0));
+  const activeCategories = data.categoryOrder.filter(c => (data.categoryCounts[c] ?? 0) > 0);
+  const maxCat = Math.max(1, ...activeCategories.map(c => data.categoryCounts[c] ?? 0));
 
   let catHtml = '';
-  for (const c of data.categoryOrder) {
+  for (const c of activeCategories) {
     const n = data.categoryCounts[c] ?? 0;
     const pct = data.total > 0 ? Math.round((n / data.total) * 100) : 0;
     const w = Math.round((n / maxCat) * 100);
@@ -163,7 +164,7 @@ body{font-family:'Cairo',sans-serif;background:#f5ede3;display:flex;justify-cont
       </div>
     </div>
     <div style="margin-top:4px;position:relative">
-      <h1 style="font-size:18px;font-weight:700;color:#1a1511;line-height:1.2;margin:0">${esc(data.labels.execSummary)}</h1>
+      <h1 style="font-size:18px;font-weight:700;color:#1a1511;line-height:1.2;margin:0">${esc(data.labels.execSummaryDated)}</h1>
       <p style="font-size:9px;color:#8a7e72;margin-top:1px">${data.isRtl ? 'بطاقة نسك - مسار التوعية و التدريب' : 'Nusuk Card — Awareness & Training Track'}</p>
     </div>
   </div>
@@ -193,9 +194,12 @@ body{font-family:'Cairo',sans-serif;background:#f5ede3;display:flex;justify-cont
     </div>
   </div>
   <div style="padding:6px 18px 10px;flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-      <h3 style="font-size:12px;font-weight:700;color:#174766;display:flex;align-items:center;gap:6px;margin:0"><span style="width:16px;height:1.5px;background:#d7a562;border-radius:1px"></span>${esc(data.labels.highlights)}</h3>
-      <span style="font-size:9px;color:#8a7e72">${data.highlights.length} ${data.isRtl ? 'منشورات' : 'posts'}</span>
+    <div style="margin-bottom:4px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <h3 style="font-size:12px;font-weight:700;color:#174766;display:flex;align-items:center;gap:6px;margin:0"><span style="width:16px;height:1.5px;background:#d7a562;border-radius:1px"></span>${esc(data.labels.highlights)}</h3>
+        <span style="font-size:9px;color:#8a7e72">${data.highlights.length} ${data.isRtl ? 'منشورات' : 'posts'}</span>
+      </div>
+      <p style="font-size:8px;color:#8a7e72;margin:2px 0 0 22px">${esc(data.labels.highlightsDesc)}</p>
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:6px;flex:1;min-height:0">
       ${highlightsHtml}
@@ -277,7 +281,7 @@ export async function buildPosterPptx(data: PosterData, fileName: string): Promi
     fontSize: 7, color: '8A7E72', align: 'right',
   });
 
-  s.addText(data.labels.execSummary, {
+  s.addText(data.labels.execSummaryDated, {
     x: 0.3, y: 0.72, w: 5, h: 0.3,
     fontSize: 16, bold: true, color: '1A1511',
   });
@@ -294,7 +298,7 @@ export async function buildPosterPptx(data: PosterData, fileName: string): Promi
   // KPI tiles
   const wowStr = data.wow === null ? '—' : (data.wow >= 0 ? '↑ ' : '↓ ') + Math.abs(data.wow) + '%';
   const kpis = [
-    { v: data.totalCaptured.toString(), l: data.isRtl ? 'إجمالي المرصود' : 'Total captured', c: '1A1511' },
+    { v: data.totalCaptured.toString(), l: data.labels.kpiTotalCaptured, c: '1A1511' },
     { v: data.total.toString(), l: data.labels.kpiTotal, c: '1A1511' },
     { v: wowStr, l: data.isRtl ? 'مقارنة بالأسبوع الماضي' : data.labels.kpiWow, c: data.wow === null ? '1A1511' : data.wow >= 0 ? '038061' : 'D95E4A' },
     { v: data.busiestLabel || '—', l: data.labels.kpiPeak, c: '1A1511' },
@@ -332,8 +336,9 @@ export async function buildPosterPptx(data: PosterData, fileName: string): Promi
   // Category panel
   s.addShape('rect', { x: 0.3, y: panelY, w: panelW, h: panelH, fill: panelBg, line: panelLine, rectRadius: 0.05 });
   s.addText(data.labels.categories, { x: 0.4, y: panelY + 0.05, w: panelW - 0.2, h: 0.2, fontSize: 8, bold: true, color: '174766' });
-  const maxCat = Math.max(1, ...data.categoryOrder.map(c => data.categoryCounts[c] ?? 0));
-  data.categoryOrder.forEach((c, i) => {
+  const pptxActiveCategories = data.categoryOrder.filter(c => (data.categoryCounts[c] ?? 0) > 0);
+  const maxCat = Math.max(1, ...pptxActiveCategories.map(c => data.categoryCounts[c] ?? 0));
+  pptxActiveCategories.forEach((c, i) => {
     const n = data.categoryCounts[c] ?? 0;
     const pct = data.total > 0 ? Math.round((n / data.total) * 100) : 0;
     const rowY = panelY + 0.32 + i * 0.22;
@@ -368,8 +373,9 @@ export async function buildPosterPptx(data: PosterData, fileName: string): Promi
   });
 
   // Highlights
-  s.addText(data.labels.highlights, { x: 0.3, y: 3.8, w: 4, h: 0.2, fontSize: 9, bold: true, color: '174766' });
-  s.addText(data.highlights.length + (data.isRtl ? ' منشورات' : ' posts'), { x: 5, y: 3.8, w: 2.2, h: 0.2, fontSize: 7, color: '8A7E72', align: 'right' });
+  s.addText(data.labels.highlights, { x: 0.3, y: 3.7, w: 4, h: 0.2, fontSize: 9, bold: true, color: '174766' });
+  s.addText(data.labels.highlightsDesc, { x: 0.3, y: 3.88, w: 4, h: 0.15, fontSize: 6, color: '8A7E72' });
+  s.addText(data.highlights.length + (data.isRtl ? ' منشورات' : ' posts'), { x: 5, y: 3.7, w: 2.2, h: 0.2, fontSize: 7, color: '8A7E72', align: 'right' });
 
   const imgPromises = data.highlights.slice(0, 6).map(async (p) => {
     if (!p.screenshot_url) return { id: p.id, uri: null };

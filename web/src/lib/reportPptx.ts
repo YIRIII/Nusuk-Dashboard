@@ -26,8 +26,10 @@ export interface ReportData {
   labels: {
     brand: string;
     execSummary: string;
+    execSummaryDated: string;
     headline: string;
     kpiTotal: string;
+    kpiTotalCaptured: string;
     kpiWow: string;
     kpiPeak: string;
     kpiUnique: string;
@@ -35,6 +37,7 @@ export interface ReportData {
     topVoices: string;
     topHashtags: string;
     highlights: string;
+    highlightsDesc: string;
     noScreenshot: string;
     period: string;
     originIndividual: string;

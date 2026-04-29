@@ -11,6 +11,7 @@ import { staggerGrid } from '@/lib/motion';
 import { usePosts, useCompanies, type PostsQuery } from '@/hooks/usePosts';
 import type { Post } from '@/lib/api';
 import { extractHashtags, countHashtags } from '@/lib/hashtags';
+import { getCompanyDisplayName } from '@/lib/companyNames';
 
 type KindFilter = 'all' | 'tweet' | 'article';
 type ReviewFilter = 'all' | 'reviewed' | 'unreviewed';
@@ -36,6 +37,7 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
   const [review, setReview] = useState<ReviewFilter>((params.get('review') as ReviewFilter) ?? 'all');
   const [origin, setOrigin] = useState<OriginFilter>('all');
   const [company] = useState<string>(params.get('company') ?? 'all');
+  const handleFilter = params.get('handle') ?? '';
   const [category, setCategory] = useState<CategoryFilter>(
     (params.get('category') as CategoryFilter) ?? 'all',
   );
@@ -73,12 +75,21 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
   );
 
   const posts = useMemo(() => {
-    if (!selectedTag) return allPosts;
-    return allPosts.filter((p) => {
-      const tags = extractHashtags(p.metadata?.text as string | undefined);
-      return tags.some((t) => t.toLowerCase() === selectedTag.toLowerCase());
-    });
-  }, [allPosts, selectedTag]);
+    let filtered = allPosts;
+    if (handleFilter) {
+      filtered = filtered.filter((p) => {
+        const h = (p.metadata?.author_handle as string | null | undefined) ?? '';
+        return h.toLowerCase() === handleFilter.toLowerCase();
+      });
+    }
+    if (selectedTag) {
+      filtered = filtered.filter((p) => {
+        const tags = extractHashtags(p.metadata?.text as string | undefined);
+        return tags.some((t) => t.toLowerCase() === selectedTag.toLowerCase());
+      });
+    }
+    return filtered;
+  }, [allPosts, selectedTag, handleFilter]);
 
   const total = data?.total ?? 0;
   const unreviewedCount = posts.filter((p) => !p.reviewed).length;
@@ -112,7 +123,9 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
     <div className="space-y-5 pb-24">
       <div className="flex flex-wrap items-center gap-3">
         <div>
-          <h1 className="text-2xl font-bold">{t('nav.posts')}</h1>
+          <h1 className="text-2xl font-bold">
+            {handleFilter ? getCompanyDisplayName(handleFilter) : t('nav.posts')}
+          </h1>
           <p className="text-sm text-muted-foreground">
             {total} {t('posts.total_count')} ·{' '}
             <button
