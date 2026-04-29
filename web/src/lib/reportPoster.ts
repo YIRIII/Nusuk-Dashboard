@@ -105,9 +105,9 @@ export function buildPosterHtml(data: PosterData, screenshotDataUris: Map<string
       ? `<span style="font-size:7px;font-weight:600;padding:1px 5px;border-radius:3px;background:rgba(215,165,98,0.1);color:#d7a562;flex-shrink:0">${esc(data.categoryLabels[cat])}</span>`
       : '';
 
-    highlightsHtml += `<div style="background:rgba(255,255,255,0.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:8px;overflow:hidden;border:0.5px solid rgba(215,165,98,0.06);display:flex;flex-direction:column;height:100%">
+    highlightsHtml += `<div style="background:rgba(255,255,255,0.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:8px;overflow:hidden;border:0.5px solid rgba(215,165,98,0.06);display:flex;flex-direction:column;height:100%;min-height:0">
       <div style="flex:1;min-height:0;overflow:hidden;background:#ebe0d0">${thumbInner}</div>
-      <div style="padding:5px 8px 6px;display:flex;flex-direction:column;gap:1px">
+      <div style="padding:4px 8px 5px;display:flex;flex-direction:column;gap:1px;flex-shrink:0">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:3px">
           <span style="font-size:9px;font-weight:700;color:#1a1511;direction:ltr;text-align:start">${esc(handle || p.metadata?.author_name || '—')}</span>
           ${catBadge}
@@ -146,7 +146,7 @@ body{font-family:'Cairo',sans-serif;background:#f5ede3;display:flex;justify-cont
 </head>
 <body>
 <div class="poster">
-  <div style="padding:16px 20px 10px;position:relative">
+  <div style="padding:12px 20px 8px;position:relative">
     <div style="position:absolute;inset:0;background:linear-gradient(160deg,rgba(215,165,98,0.08) 0%,transparent 60%);pointer-events:none"></div>
     <div style="display:flex;align-items:center;justify-content:space-between;position:relative">
       <div style="display:flex;align-items:center;gap:10px">
@@ -162,13 +162,13 @@ body{font-family:'Cairo',sans-serif;background:#f5ede3;display:flex;justify-cont
         <div style="font-size:9px;color:#8a7e72">${esc(secondaryDate)}</div>
       </div>
     </div>
-    <div style="margin-top:8px;position:relative">
-      <h1 style="font-size:20px;font-weight:700;color:#1a1511;line-height:1.3;margin:0">${esc(data.labels.execSummary)}</h1>
-      <p style="font-size:10px;color:#8a7e72;margin-top:2px">${data.isRtl ? 'بطاقة نسك - مسار التوعية و التدريب' : 'Nusuk Card — Awareness & Training Track'}</p>
+    <div style="margin-top:4px;position:relative">
+      <h1 style="font-size:18px;font-weight:700;color:#1a1511;line-height:1.2;margin:0">${esc(data.labels.execSummary)}</h1>
+      <p style="font-size:9px;color:#8a7e72;margin-top:1px">${data.isRtl ? 'بطاقة نسك - مسار التوعية و التدريب' : 'Nusuk Card — Awareness & Training Track'}</p>
     </div>
   </div>
   <div style="height:0.5px;margin:0 20px;background:linear-gradient(90deg,transparent,#d7a562,transparent);opacity:0.4"></div>
-  <div style="padding:10px 18px 8px">
+  <div style="padding:6px 18px 6px">
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px">
       ${kpis.map(k => `<div style="background:rgba(255,255,255,0.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-radius:8px;padding:8px 6px 6px;text-align:center;border:0.5px solid rgba(215,165,98,0.06)">
         <div style="font-size:${k.small ? '14px' : '22px'};font-weight:700;color:${k.color || '#1a1511'};line-height:1;${k.small ? 'margin-top:3px' : ''}">${esc(k.v)}</div>
@@ -192,12 +192,12 @@ body{font-family:'Cairo',sans-serif;background:#f5ede3;display:flex;justify-cont
       </div>
     </div>
   </div>
-  <div style="padding:8px 18px 16px;flex:1;display:flex;flex-direction:column">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+  <div style="padding:6px 18px 10px;flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
       <h3 style="font-size:12px;font-weight:700;color:#174766;display:flex;align-items:center;gap:6px;margin:0"><span style="width:16px;height:1.5px;background:#d7a562;border-radius:1px"></span>${esc(data.labels.highlights)}</h3>
       <span style="font-size:9px;color:#8a7e72">${data.highlights.length} ${data.isRtl ? 'منشورات' : 'posts'}</span>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:8px;flex:1">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:6px;flex:1;min-height:0">
       ${highlightsHtml}
     </div>
   </div>
