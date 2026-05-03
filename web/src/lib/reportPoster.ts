@@ -37,7 +37,7 @@ function esc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-export function buildPosterHtml(data: PosterData, screenshotDataUris: Map<string, string>): string {
+export function buildPosterHtml(data: PosterData, screenshotUrls: Map<string, string>): string {
   const dir = data.isRtl ? 'rtl' : 'ltr';
   const isHijri = data.dateSystem === 'hijri';
   const primaryDate = isHijri ? data.hijriLabel : data.startLabel + ' — ' + data.endLabel;
@@ -95,11 +95,11 @@ export function buildPosterHtml(data: PosterData, screenshotDataUris: Map<string
     const handle = p.metadata?.author_handle ?? '';
     const text = (p.metadata?.text ?? '').slice(0, 80);
     const dateLabel = data.datePostedLabel(p);
-    const imgUri = p.screenshot_url ? screenshotDataUris.get(p.id) : null;
+    const imgUrl = p.screenshot_url ? (screenshotUrls.get(p.id) ?? p.screenshot_url) : null;
     const cat = p.origin === 'company' ? (p.company_category ?? 'unclassified') as Category : null;
 
-    const thumbInner = imgUri
-      ? `<img src="${imgUri}" style="width:100%;height:100%;object-fit:cover;object-position:top"/>`
+    const thumbInner = imgUrl
+      ? `<img src="${esc(imgUrl)}" crossorigin="anonymous" style="width:100%;height:100%;object-fit:cover;object-position:top"/>`
       : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:20px;opacity:0.15">📸</div>`;
 
     const catBadge = cat
@@ -211,21 +211,31 @@ body{font-family:'Cairo',sans-serif;background:#f5ede3;display:flex;justify-cont
 }
 
 export async function openPosterPreview(data: PosterData): Promise<void> {
-  const screenshotUris = new Map<string, string>();
-  const fetches = data.highlights.slice(0, 6).map(async (p) => {
-    if (!p.screenshot_url) return;
-    const uri = await urlToDataUri(p.screenshot_url);
-    if (uri) screenshotUris.set(p.id, uri);
-  });
-  await Promise.all(fetches);
+  const screenshotUrls = new Map<string, string>();
+  for (const p of data.highlights.slice(0, 6)) {
+    if (p.screenshot_url) screenshotUrls.set(p.id, p.screenshot_url);
+  }
 
-  const html = buildPosterHtml(data, screenshotUris);
+  const html = buildPosterHtml(data, screenshotUrls);
   const win = window.open('', '_blank');
   if (win) {
     win.document.open();
     win.document.write(html);
     win.document.close();
-    setTimeout(() => win.print(), 600);
+    const imgs = win.document.querySelectorAll('img');
+    if (imgs.length > 0) {
+      const loaded = Array.from(imgs).map(
+        (img) =>
+          new Promise<void>((resolve) => {
+            if (img.complete) return resolve();
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+          }),
+      );
+      await Promise.all(loaded);
+      await new Promise((r) => setTimeout(r, 300));
+    }
+    win.print();
   }
 }
 
