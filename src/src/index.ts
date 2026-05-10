@@ -117,7 +117,7 @@ app.use('/api', requireAdmin, captureRouter(captureService));
 app.use('/api', requireAdmin, activityRouter());
 
 const webDist = join(HERE, '../../web/dist');
-app.use(express.static(webDist));
+app.use(express.static(webDist, { maxAge: '1d' }));
 app.get('*', (_req, res, next) => {
   if (_req.path.startsWith('/api') || _req.path === '/health') return next();
   res.sendFile(join(webDist, 'index.html'));

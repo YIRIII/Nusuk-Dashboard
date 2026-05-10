@@ -82,6 +82,7 @@ export function postsRouter(): Router {
         };
       });
 
+      res.set('Cache-Control', 'private, max-age=60');
       res.json({ trace_id: req.traceId, total, rows: enriched });
     } catch (err) {
       logger.error({ err, trace_id: req.traceId }, 'list posts failed');
@@ -99,6 +100,7 @@ export function postsRouter(): Router {
         return;
       }
       const latest = await latestCaptureForPost(row.id);
+      res.set('Cache-Control', 'private, max-age=60');
       res.json({ trace_id: req.traceId, post: await enrich(row, latest) });
     } catch (err) {
       logger.error({ err, trace_id: req.traceId }, 'get post failed');
@@ -160,6 +162,7 @@ export function postsRouter(): Router {
   router.get('/companies', async (req, res) => {
     try {
       const rows = await listCompanies();
+      res.set('Cache-Control', 'private, max-age=300');
       res.json({ trace_id: req.traceId, rows });
     } catch (err) {
       logger.error({ err, trace_id: req.traceId }, 'list companies failed');

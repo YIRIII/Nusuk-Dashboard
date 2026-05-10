@@ -66,6 +66,7 @@ export function activityRouter(): Router {
         };
       });
 
+      res.set('Cache-Control', 'private, max-age=60');
       res.json({ trace_id: req.traceId, rows: entries });
     } catch (err) {
       logger.error({ err, trace_id: req.traceId }, 'activity list failed');
