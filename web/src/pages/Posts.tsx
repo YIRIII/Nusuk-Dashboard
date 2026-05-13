@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
@@ -49,8 +49,9 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [quickEditPost, setQuickEditPost] = useState<Post | null>(null);
 
-  const PAGE_SIZE = 20;
-  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 40;
+  const [pages, setPages] = useState(1);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   const query: PostsQuery = useMemo(
     () => ({
@@ -62,24 +63,40 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
       date_range: dateRange,
       sort,
       ...(q ? { q } : {}),
-      limit: PAGE_SIZE,
-      offset: page * PAGE_SIZE,
+      limit: pages * PAGE_SIZE,
     }),
-    [kind, review, origin, company, category, dateRange, sort, q, page],
+    [kind, review, origin, company, category, dateRange, sort, q, pages],
   );
 
-  // Reset to first page when any filter changes.
+  // Reset when filters change.
   const filterKey = `${kind}-${review}-${origin}-${company}-${category}-${dateRange}-${sort}-${q}`;
   const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
   if (filterKey !== prevFilterKey) {
     setPrevFilterKey(filterKey);
-    setPage(0);
+    setPages(1);
   }
 
   const { data, isLoading, error, mutate: mutatePosts } = usePosts(query);
   const { data: companiesData } = useCompanies();
   const companies = companiesData?.rows ?? [];
   const allPosts = data?.rows ?? [];
+
+  const hasMore = allPosts.length < (data?.total ?? 0);
+  const loadMore = useCallback(() => {
+    if (hasMore && !isLoading) setPages((p) => p + 1);
+  }, [hasMore, isLoading]);
+
+  // Infinite scroll — load more when the sentinel enters the viewport.
+  useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry?.isIntersecting) loadMore(); },
+      { rootMargin: '400px' },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [loadMore]);
 
   const topTags = useMemo(
     () => countHashtags(allPosts.map((p) => p.metadata?.text as string | undefined)),
@@ -104,7 +121,6 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
   }, [allPosts, selectedTag, handleFilter]);
 
   const total = data?.total ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const unreviewedCount = posts.filter((p) => !p.reviewed).length;
 
   const toggleSelect = (id: string) => {
@@ -359,24 +375,15 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
         </div>
       )}
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3 pt-2">
+      {/* Infinite scroll sentinel */}
+      <div ref={loadMoreRef} className="h-1" />
+      {hasMore && !isLoading && (
+        <div className="flex justify-center pt-2">
           <button
-            onClick={() => setPage((p) => Math.max(0, p - 1))}
-            disabled={page === 0}
-            className="inline-flex h-9 items-center rounded-lg border border-input bg-background px-4 text-sm font-medium transition-colors hover:bg-accent disabled:opacity-40 disabled:pointer-events-none"
+            onClick={loadMore}
+            className="inline-flex h-9 items-center rounded-lg border border-input bg-background px-6 text-sm font-medium transition-colors hover:bg-accent"
           >
-            {t('posts.pagination.prev')}
-          </button>
-          <span className="text-sm text-muted-foreground">
-            {t('posts.pagination.page', { current: page + 1, total: totalPages })}
-          </span>
-          <button
-            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-            disabled={page >= totalPages - 1}
-            className="inline-flex h-9 items-center rounded-lg border border-input bg-background px-4 text-sm font-medium transition-colors hover:bg-accent disabled:opacity-40 disabled:pointer-events-none"
-          >
-            {t('posts.pagination.next')}
+            {t('posts.pagination.load_more')}
           </button>
         </div>
       )}

@@ -52,15 +52,18 @@ export function postsRouter(): Router {
         ...(q.deleted === 'true' ? { onlyDeleted: true } : {}),
       });
 
-      // Batch-load latest captures for all posts in ONE query (N+1 → 1).
+      // Batch-load latest captures. Supabase .in() has a URL length limit,
+      // so chunk into batches of 50 IDs to avoid silent failures on large sets.
       const sb = getSupabase();
       const postIds = rows.map((r) => r.id);
       const latestByPost = new Map<string, CaptureRow>();
-      if (postIds.length > 0) {
+      const CHUNK = 50;
+      for (let i = 0; i < postIds.length; i += CHUNK) {
+        const chunk = postIds.slice(i, i + CHUNK);
         const caps = await sb
           .from('captures')
           .select('*')
-          .in('post_id', postIds)
+          .in('post_id', chunk)
           .eq('success', true)
           .order('created_at', { ascending: false });
         if (!caps.error && caps.data) {
