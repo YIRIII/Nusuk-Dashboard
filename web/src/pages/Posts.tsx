@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
 import { useSWRConfig } from 'swr';
 import { FileSpreadsheet, Search, CheckCircle2, Circle, CheckSquare, Square } from 'lucide-react';
 import { PostCard } from '@/components/PostCard';
 import { PostsBulkBar } from '@/components/PostsBulkBar';
 import { QuickEditDialog } from '@/components/QuickEditDialog';
-import { staggerGrid } from '@/lib/motion';
 import { usePosts, useCompanies, type PostsQuery } from '@/hooks/usePosts';
 import type { Post } from '@/lib/api';
 import { extractHashtags, countHashtags } from '@/lib/hashtags';
@@ -318,7 +316,7 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
         </div>
       </div>
 
-      {isLoading && (
+      {isLoading && posts.length === 0 && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="animate-pulse rounded-xl border border-border bg-card p-4 space-y-3">
@@ -345,10 +343,7 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
       )}
 
       {!isLoading && !error && (
-        <motion.div
-          variants={staggerGrid}
-          initial="hidden"
-          animate="visible"
+        <div
           className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
         >
           {posts.map((p) => (
@@ -366,7 +361,7 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
               } : {})}
             />
           ))}
-        </motion.div>
+        </div>
       )}
 
       {!isLoading && !error && posts.length === 0 && (
