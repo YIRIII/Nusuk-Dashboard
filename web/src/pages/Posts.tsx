@@ -316,7 +316,7 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
         </div>
       </div>
 
-      {isLoading && posts.length === 0 && (
+      {posts.length === 0 && isLoading && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="animate-pulse rounded-xl border border-border bg-card p-4 space-y-3">
@@ -328,7 +328,7 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
         </div>
       )}
 
-      {error && (
+      {error && posts.length === 0 && (
         <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-6 text-center space-y-3">
           <p className="text-sm text-red-600 dark:text-red-400">
             {t('posts.error_message')}
@@ -342,10 +342,8 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
         </div>
       )}
 
-      {!isLoading && !error && (
-        <div
-          className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
-        >
+      {posts.length > 0 && (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {posts.map((p) => (
             <PostCard
               key={p.id}
@@ -364,7 +362,7 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
         </div>
       )}
 
-      {!isLoading && !error && posts.length === 0 && (
+      {posts.length === 0 && !isLoading && !error && (
         <div className="rounded-xl border border-dashed border-border bg-accent/20 p-12 text-center text-sm text-muted-foreground">
           {t('posts.empty')}
         </div>
@@ -372,8 +370,8 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
 
       {/* Infinite scroll sentinel */}
       <div ref={loadMoreRef} className="h-1" />
-      {hasMore && !isLoading && (
-        <div className="flex justify-center pt-2">
+      {hasMore && (
+        <div className="flex justify-center pt-2 pb-4">
           <button
             onClick={loadMore}
             className="inline-flex h-9 items-center rounded-lg border border-input bg-background px-6 text-sm font-medium transition-colors hover:bg-accent"
