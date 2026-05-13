@@ -1,3 +1,4 @@
+import sharp from 'sharp';
 import { getSupabase, CAPTURES_BUCKET } from './supabase.js';
 import { logger } from '../logger.js';
 
@@ -35,16 +36,18 @@ export async function uploadScreenshot(
   captureId: string,
   buf: Buffer,
 ): Promise<UploadedScreenshot> {
+  const webp = await sharp(buf).webp({ quality: 80 }).toBuffer();
   const sb = getSupabase();
-  const path = postId + '/' + captureId + '.png';
-  const res = await sb.storage.from(CAPTURES_BUCKET).upload(path, buf, {
-    contentType: 'image/png',
+  const path = postId + '/' + captureId + '.webp';
+  const res = await sb.storage.from(CAPTURES_BUCKET).upload(path, webp, {
+    contentType: 'image/webp',
     upsert: false,
   });
   if (res.error) {
     throw new Error('screenshot upload failed: ' + res.error.message);
   }
-  return { path, bytes: buf.length };
+  logger.info({ postId, pngBytes: buf.length, webpBytes: webp.length }, 'screenshot compressed');
+  return { path, bytes: webp.length };
 }
 
 export function publicUrl(path: string): string {

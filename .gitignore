@@ -11,3 +11,4 @@ coverage/
 .tsbuildinfo
 tests/golden/actual/
 tests/golden/diff/
+.vercel

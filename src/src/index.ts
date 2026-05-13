@@ -50,6 +50,7 @@ import { captureRouter } from './routes/capture.js';
 import { postsRouter } from './routes/posts.js';
 import { exportRouter } from './routes/export.js';
 import { activityRouter } from './routes/activity.js';
+import { screenshotsRouter } from './routes/screenshots.js';
 import { login, requireAdmin } from './auth.js';
 
 // eslint-disable-next-line no-console
@@ -112,6 +113,7 @@ app.get('/api/metrics', (_req, res) => {
 });
 
 app.use('/api', postsRouter());
+app.use('/api', screenshotsRouter());
 app.use('/api', exportRouter());
 app.use('/api', requireAdmin, captureRouter(captureService));
 app.use('/api', requireAdmin, activityRouter());

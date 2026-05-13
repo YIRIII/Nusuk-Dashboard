@@ -12,7 +12,6 @@ import {
   propagateCategoryByHandle,
 } from '../db/posts.js';
 import { getSupabase } from '../db/supabase.js';
-import { signedUrl, signedUrls } from '../db/storage.js';
 import type { PostRow, CaptureRow } from '../db/types.js';
 import { logger } from '../logger.js';
 
@@ -20,11 +19,15 @@ interface ValidatedQueryReq<T> {
   validatedQuery: T;
 }
 
-async function enrich(post: PostRow, latest: CaptureRow | null) {
+function screenshotUrl(storagePath: string): string {
+  return '/api/screenshots/' + storagePath;
+}
+
+function enrich(post: PostRow, latest: CaptureRow | null) {
   return {
     ...post,
     latest_capture: latest,
-    screenshot_url: latest ? await signedUrl(latest.storage_path).catch(() => null) : null,
+    screenshot_url: latest ? screenshotUrl(latest.storage_path) : null,
   };
 }
 
@@ -66,20 +69,9 @@ export function postsRouter(): Router {
           }
         }
       }
-      // Sign ALL URLs in a single Supabase call (was N roundtrips).
-      const paths: string[] = [];
-      for (const row of rows) {
-        const latest = latestByPost.get(row.id);
-        if (latest) paths.push(latest.storage_path);
-      }
-      const urlMap = await signedUrls(paths);
       const enriched = rows.map((row) => {
         const latest = latestByPost.get(row.id) ?? null;
-        return {
-          ...row,
-          latest_capture: latest,
-          screenshot_url: latest ? urlMap.get(latest.storage_path) ?? null : null,
-        };
+        return enrich(row, latest);
       });
 
       res.set('Cache-Control', 'private, max-age=60');

@@ -49,6 +49,9 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [quickEditPost, setQuickEditPost] = useState<Post | null>(null);
 
+  const PAGE_SIZE = 20;
+  const [page, setPage] = useState(0);
+
   const query: PostsQuery = useMemo(
     () => ({
       kind,
@@ -59,12 +62,21 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
       date_range: dateRange,
       sort,
       ...(q ? { q } : {}),
-      limit: 1000,
+      limit: PAGE_SIZE,
+      offset: page * PAGE_SIZE,
     }),
-    [kind, review, origin, company, category, dateRange, sort, q],
+    [kind, review, origin, company, category, dateRange, sort, q, page],
   );
 
-  const { data, isLoading, error } = usePosts(query);
+  // Reset to first page when any filter changes.
+  const filterKey = `${kind}-${review}-${origin}-${company}-${category}-${dateRange}-${sort}-${q}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  if (filterKey !== prevFilterKey) {
+    setPrevFilterKey(filterKey);
+    setPage(0);
+  }
+
+  const { data, isLoading, error, mutate: mutatePosts } = usePosts(query);
   const { data: companiesData } = useCompanies();
   const companies = companiesData?.rows ?? [];
   const allPosts = data?.rows ?? [];
@@ -92,6 +104,7 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
   }, [allPosts, selectedTag, handleFilter]);
 
   const total = data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const unreviewedCount = posts.filter((p) => !p.reviewed).length;
 
   const toggleSelect = (id: string) => {
@@ -114,6 +127,7 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
   void i18n;
 
   const refresh = () => {
+    void mutatePosts();
     void mutate((key) => typeof key === 'string' && key.startsWith('/api/posts'));
   };
 
@@ -289,14 +303,28 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
       </div>
 
       {isLoading && (
-        <div className="rounded-xl border border-dashed border-border bg-accent/20 p-12 text-center text-sm text-muted-foreground">
-          {t('common.loading')}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="animate-pulse rounded-xl border border-border bg-card p-4 space-y-3">
+              <div className="h-40 rounded-lg bg-accent/40" />
+              <div className="h-4 w-3/4 rounded bg-accent/40" />
+              <div className="h-3 w-1/2 rounded bg-accent/30" />
+            </div>
+          ))}
         </div>
       )}
 
       {error && (
-        <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-6 text-sm text-red-600">
-          {t('common.error')}: {String((error as Error).message)}
+        <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-6 text-center space-y-3">
+          <p className="text-sm text-red-600 dark:text-red-400">
+            {t('posts.error_message')}
+          </p>
+          <button
+            onClick={() => void mutatePosts()}
+            className="inline-flex h-9 items-center rounded-lg border border-red-500/40 bg-background px-4 text-sm font-medium text-red-600 hover:bg-red-500/10 dark:text-red-400"
+          >
+            {t('posts.retry')}
+          </button>
         </div>
       )}
 
@@ -328,6 +356,28 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
       {!isLoading && !error && posts.length === 0 && (
         <div className="rounded-xl border border-dashed border-border bg-accent/20 p-12 text-center text-sm text-muted-foreground">
           {t('posts.empty')}
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-3 pt-2">
+          <button
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            disabled={page === 0}
+            className="inline-flex h-9 items-center rounded-lg border border-input bg-background px-4 text-sm font-medium transition-colors hover:bg-accent disabled:opacity-40 disabled:pointer-events-none"
+          >
+            {t('posts.pagination.prev')}
+          </button>
+          <span className="text-sm text-muted-foreground">
+            {t('posts.pagination.page', { current: page + 1, total: totalPages })}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+            disabled={page >= totalPages - 1}
+            className="inline-flex h-9 items-center rounded-lg border border-input bg-background px-4 text-sm font-medium transition-colors hover:bg-accent disabled:opacity-40 disabled:pointer-events-none"
+          >
+            {t('posts.pagination.next')}
+          </button>
         </div>
       )}
 

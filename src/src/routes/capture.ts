@@ -13,7 +13,7 @@ import {
   softDeletePost,
 } from '../db/posts.js';
 import { getSupabase } from '../db/supabase.js';
-import { uploadScreenshot, signedUrl } from '../db/storage.js';
+import { uploadScreenshot } from '../db/storage.js';
 import { logger } from '../logger.js';
 import type { PostOrigin } from '../db/types.js';
 
@@ -108,7 +108,7 @@ async function captureOne(
       post_id: post.id,
       capture_id: row.id,
       stage: final.stage,
-      screenshot_url: await signedUrl(uploaded.path),
+      screenshot_url: '/api/screenshots/' + uploaded.path,
       duration_ms: Date.now() - started,
     };
   } catch (err) {
