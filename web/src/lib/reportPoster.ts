@@ -95,7 +95,7 @@ export function buildPosterHtml(data: PosterData, screenshotUrls: Map<string, st
     const handle = p.metadata?.author_handle ?? '';
     const text = (p.metadata?.text ?? '').slice(0, 80);
     const dateLabel = data.datePostedLabel(p);
-    const imgUrl = p.screenshot_url ? (screenshotUrls.get(p.id) ?? p.screenshot_url) : null;
+    const imgUrl = p.screenshot_url ? (screenshotUrls.get(p.id) ?? toAbsoluteUrl(p.screenshot_url)) : null;
     const cat = p.origin === 'company' ? (p.company_category ?? 'unclassified') as Category : null;
 
     const thumbInner = imgUrl
@@ -210,10 +210,15 @@ body{font-family:'Cairo',sans-serif;background:#f5ede3;display:flex;justify-cont
 </html>`;
 }
 
+function toAbsoluteUrl(url: string): string {
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return window.location.origin + url;
+}
+
 export async function openPosterPreview(data: PosterData): Promise<void> {
   const screenshotUrls = new Map<string, string>();
   for (const p of data.highlights.slice(0, 6)) {
-    if (p.screenshot_url) screenshotUrls.set(p.id, p.screenshot_url);
+    if (p.screenshot_url) screenshotUrls.set(p.id, toAbsoluteUrl(p.screenshot_url));
   }
 
   const html = buildPosterHtml(data, screenshotUrls);
@@ -357,7 +362,7 @@ export async function buildPosterPptx(data: PosterData, fileName: string): Promi
   // --- Highlight cards (6 in one row, RTL order) ---
   const imgPromises = data.highlights.slice(0, 6).map(async (p) => {
     if (!p.screenshot_url) return { id: p.id, uri: null };
-    const uri = await urlToDataUri(p.screenshot_url);
+    const uri = await urlToDataUri(toAbsoluteUrl(p.screenshot_url));
     return { id: p.id, uri };
   });
   const imgs = await Promise.all(imgPromises);

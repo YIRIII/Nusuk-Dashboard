@@ -545,7 +545,11 @@ export async function buildWeeklyPptx(data: ReportData, fileName: string): Promi
     console.log('[pptx] fetching', data.highlights.length, 'screenshots');
     const t0 = Date.now();
     const dataUris = await Promise.all(
-      data.highlights.map((p) => (p.screenshot_url ? urlToDataUri(p.screenshot_url) : null)),
+      data.highlights.map((p) => {
+        if (!p.screenshot_url) return null;
+        const abs = p.screenshot_url.startsWith('http') ? p.screenshot_url : window.location.origin + p.screenshot_url;
+        return urlToDataUri(abs);
+      }),
     );
     // eslint-disable-next-line no-console
     console.log(
