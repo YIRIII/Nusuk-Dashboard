@@ -74,7 +74,7 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
     setPages(1);
   }
 
-  const { data, isLoading, error, mutate: mutatePosts } = usePosts(query);
+  const { data, isLoading, isValidating, error, mutate: mutatePosts } = usePosts(query);
   const { data: companiesData } = useCompanies();
   const companies = companiesData?.rows ?? [];
   const allPosts = data?.rows ?? [];
@@ -372,12 +372,22 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
       <div ref={loadMoreRef} className="h-1" />
       {hasMore && (
         <div className="flex justify-center pt-2 pb-4">
-          <button
-            onClick={loadMore}
-            className="inline-flex h-9 items-center rounded-lg border border-input bg-background px-6 text-sm font-medium transition-colors hover:bg-accent"
-          >
-            {t('posts.pagination.load_more')}
-          </button>
+          {isValidating ? (
+            <div className="inline-flex h-9 items-center gap-2 px-6 text-sm text-muted-foreground">
+              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              {t('common.loading')}
+            </div>
+          ) : (
+            <button
+              onClick={loadMore}
+              className="inline-flex h-9 items-center rounded-lg border border-input bg-background px-6 text-sm font-medium transition-colors hover:bg-accent"
+            >
+              {t('posts.pagination.load_more')}
+            </button>
+          )}
         </div>
       )}
 
