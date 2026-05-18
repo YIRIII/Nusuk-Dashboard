@@ -315,7 +315,7 @@ export function ReportWeeklyPage() {
   }
 
   function buildPosterData(reportData: ReportData): PosterData {
-    return { ...reportData, totalCaptured: allRows.length, showLogo };
+    return { ...reportData, totalCaptured: data?.total ?? allRows.length, showLogo };
   }
 
   function buildReportData(): ReportData {

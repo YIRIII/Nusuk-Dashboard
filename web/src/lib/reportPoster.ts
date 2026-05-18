@@ -382,7 +382,7 @@ export async function buildPosterPptx(data: PosterData, fileName: string): Promi
 
     const imgUri = imgMap.get(p.id);
     if (imgUri) {
-      s.addImage({ data: imgUri, x: x + 0.021, y: y + 0.022, w: 1.475, h: 0.952 });
+      s.addImage({ data: imgUri, x: x + 0.021, y: y + 0.022, w: 1.475, h: 0.952, sizing: { type: 'cover', w: 1.475, h: 0.952 } });
     } else {
       s.addShape('rect', { x: x + 0.021, y: y + 0.022, w: 1.475, h: 0.952, fill: { color: 'F5EDE3' }, rectRadius: 0.03 });
       s.addText(data.labels.noScreenshot, { x: x + 0.021, y: y + 0.40, w: 1.475, h: 0.20, fontSize: 6, color: '8A7E72', align: 'center', fontFace: FONT });
