@@ -28,15 +28,20 @@ async function fetchRows(ids: string[] | null): Promise<JoinedRow[]> {
       : [];
   const companyById = new Map(companies.map((c) => [c.id, c as CompanyRow]));
 
-  const captures =
-    ((
-      await sb
-        .from('captures')
-        .select('*')
-        .in('post_id', rows.map((r) => r.id))
-        .eq('success', true)
-        .order('created_at', { ascending: false })
-    ).data ?? []) as CaptureRow[];
+  // Batch the .in() filter to avoid URL-too-long errors with many posts.
+  const BATCH = 100;
+  const postIds = rows.map((r) => r.id);
+  const captures: CaptureRow[] = [];
+  for (let i = 0; i < postIds.length; i += BATCH) {
+    const chunk = postIds.slice(i, i + BATCH);
+    const res = await sb
+      .from('captures')
+      .select('*')
+      .in('post_id', chunk)
+      .eq('success', true)
+      .order('created_at', { ascending: false });
+    if (res.data) captures.push(...(res.data as CaptureRow[]));
+  }
   const latestByPost = new Map<string, CaptureRow>();
   for (const c of captures) {
     if (!latestByPost.has(c.post_id)) latestByPost.set(c.post_id, c);
@@ -175,18 +180,26 @@ export function exportRouter(): Router {
         { name: 'manifest.txt' },
       );
 
-      // Stream each screenshot in; on error we log and skip (partial archive
-      // is better than a total failure).
-      for (const r of rows) {
-        if (!r._latest_capture) continue;
-        try {
-          const buf = await downloadScreenshot(r._latest_capture.storage_path);
-          archive.append(buf, { name: 'screenshots/' + r.id + '.png' });
-        } catch (err) {
-          logger.warn(
-            { err, post_id: r.id, trace_id: req.traceId },
-            'screenshot missing from archive',
-          );
+      // Download screenshots in parallel batches, then append to archive.
+      const withCapture = rows.filter((r) => r._latest_capture);
+      const CONCURRENCY = 10;
+      for (let i = 0; i < withCapture.length; i += CONCURRENCY) {
+        const batch = withCapture.slice(i, i + CONCURRENCY);
+        const results = await Promise.allSettled(
+          batch.map(async (r) => ({
+            id: r.id,
+            buf: await downloadScreenshot(r._latest_capture!.storage_path),
+          })),
+        );
+        for (const result of results) {
+          if (result.status === 'fulfilled') {
+            archive.append(result.value.buf, { name: 'screenshots/' + result.value.id + '.png' });
+          } else {
+            logger.warn(
+              { err: result.reason, trace_id: req.traceId },
+              'screenshot missing from archive',
+            );
+          }
         }
       }
 
