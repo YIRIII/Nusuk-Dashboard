@@ -18,6 +18,8 @@ export interface CaptureOptions {
   clipToSelector?: string;
   /** Padding in pixels around the clipped element. Default 12. */
   clipPaddingPx?: number;
+  /** Cookies to set before navigation (e.g. consent bypass). */
+  cookies?: Array<{ name: string; value: string; domain: string }>;
 }
 
 export interface CaptureResult {
@@ -40,6 +42,7 @@ export class CaptureService {
       settleMs = 0,
       clipToSelector,
       clipPaddingPx = 12,
+      cookies,
     } = opts;
 
     const browser = await this.pool.acquire();
@@ -53,6 +56,10 @@ export class CaptureService {
         // Prefer dark mode — analyst preference, looks better in reports.
         // Override per-request via `colorScheme: "light"` if needed later.
         await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
+
+        if (cookies?.length) {
+          await page.setCookie(...cookies);
+        }
 
         page.once('response', (res) => {
           if (res.url() === url || res.request().redirectChain().length === 0) {
