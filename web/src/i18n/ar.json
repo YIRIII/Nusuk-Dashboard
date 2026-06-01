@@ -70,6 +70,7 @@
   "reports.comprehensive.clear_selection": "مسح الاختيار",
   "posts.bulk.generate_report": "إنشاء تقرير",
   "reports.comprehensive.download_pdf": "التقرير الشامل PDF",
+  "reports.comprehensive.highlight_count": "عدد المنشورات",
 
   "theme.toggle": "تبديل السمة",
   "theme.light": "الوضع الفاتح",

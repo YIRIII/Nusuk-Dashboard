@@ -70,6 +70,7 @@
   "reports.comprehensive.clear_selection": "Clear selection",
   "posts.bulk.generate_report": "Generate Report",
   "reports.comprehensive.download_pdf": "Full Report PDF",
+  "reports.comprehensive.highlight_count": "Highlights",
 
   "theme.toggle": "Toggle theme",
   "theme.light": "Light mode",

@@ -1,6 +1,7 @@
 import PptxGenJS from 'pptxgenjs';
 import type { ReportData, Category } from './reportPptx';
 import type { Post } from './api';
+import { buildPosterHtml, type PosterData } from './reportPoster';
 
 export interface ComprehensiveData extends ReportData {
   totalCaptured: number;
@@ -12,6 +13,7 @@ export interface ComprehensiveData extends ReportData {
   extendedHighlights: Post[];
   allPosts: Post[];
   hasManualSelection: boolean;
+  highlightCount: number;
   comprehensiveLabels: {
     coverageAnalysis: string;
     dailyTrend: string;
@@ -701,321 +703,213 @@ export async function buildComprehensiveReport(data: ComprehensiveData, fileName
   await pptx.writeFile({ fileName });
 }
 
+
 // ═══════════════════════════════════════════════════════════════════
-//  HTML / PDF comprehensive report
+//  HTML / PDF — poster page 1 + charts page 2 + highlights page 3
 // ═══════════════════════════════════════════════════════════════════
 
 function esc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function catColorCss(c: Category): string {
-  return '#' + CAT_HEX[c];
+function svgDoughnut(segments: Array<{ value: number; color: string; label: string }>, size: number): string {
+  const total = segments.reduce((s, seg) => s + seg.value, 0);
+  if (total === 0) return '';
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = size * 0.35;
+  const strokeW = size * 0.12;
+  const circumference = 2 * Math.PI * r;
+  let offset = 0;
+  let arcs = '';
+  let legendHtml = '';
+  for (const seg of segments) {
+    const pct = seg.value / total;
+    const dashLen = pct * circumference;
+    arcs += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${seg.color}" stroke-width="${strokeW}" stroke-dasharray="${dashLen} ${circumference - dashLen}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${cx} ${cy})"/>`;
+    offset += dashLen;
+    legendHtml += `<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px"><span style="width:8px;height:8px;border-radius:50%;background:${seg.color};flex-shrink:0"></span><span style="font-size:8px;color:#1a1511">${esc(seg.label)}</span><span style="font-size:8px;font-weight:700;color:#1a1511;margin-inline-start:auto">${seg.value} (${Math.round(pct * 100)}%)</span></div>`;
+  }
+  return `<div style="display:flex;align-items:center;gap:10px"><svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${arcs}<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="central" style="font-size:${size * 0.14}px;font-weight:700;fill:#1a1511">${total}</text></svg><div style="flex:1">${legendHtml}</div></div>`;
 }
 
-function buildComprehensiveHtml(d: ComprehensiveData): string {
-  const dir = d.isRtl ? 'rtl' : 'ltr';
-  const isHijri = d.dateSystem === 'hijri';
-  const primaryDate = isHijri ? d.hijriLabel : d.startLabel + ' — ' + d.endLabel;
-  const secondaryDate = isHijri ? d.startLabel + ' — ' + d.endLabel : d.hijriLabel;
-
-  const wowStr = d.wow === null ? '—' : (d.wow >= 0 ? '↑' : '↓') + Math.abs(d.wow) + '%';
-  const wowColor = d.wow === null ? '#1a1511' : d.wow >= 0 ? '#038061' : '#d95e4a';
-
-  const kpis = [
-    { v: d.totalCaptured.toString(), l: d.labels.kpiTotalCaptured },
-    { v: d.total.toString(), l: d.labels.kpiTotal },
-    { v: wowStr, l: d.isRtl ? 'مقارنة بالأسبوع الماضي' : d.labels.kpiWow, color: wowColor },
-    { v: d.busiestLabel || '—', l: d.labels.kpiPeak, small: true },
-    { v: d.uniqueHandles.toString(), l: d.labels.kpiUnique },
-  ];
-
-  // ── Category bars ──
-  const activeCategories = d.categoryOrder.filter(c => (d.categoryCounts[c] ?? 0) > 0);
-  const maxCat = Math.max(1, ...activeCategories.map(c => d.categoryCounts[c] ?? 0));
-  let catHtml = '';
-  for (const c of activeCategories) {
-    const n = d.categoryCounts[c] ?? 0;
-    const pct = d.total > 0 ? Math.round((n / d.total) * 100) : 0;
-    const w = Math.round((n / maxCat) * 100);
-    catHtml += `<div class="bar-row">
-      <span class="bar-label">${esc(d.categoryLabels[c])}</span>
-      <div class="bar-track"><div class="bar-fill" style="width:${w}%;background:${catColorCss(c)}"></div></div>
-      <span class="bar-val">${n}</span>
-      <span class="bar-pct">${pct}%</span>
-    </div>`;
+function svgBarChart(bars: Array<{ label: string; value: number }>, width: number, height: number): string {
+  if (bars.length === 0) return '';
+  const maxVal = Math.max(1, ...bars.map(b => b.value));
+  const barW = Math.min(30, (width - 20) / bars.length * 0.7);
+  const gap = (width - 20 - barW * bars.length) / Math.max(1, bars.length - 1);
+  const chartH = height - 30;
+  let barsHtml = '';
+  for (let i = 0; i < bars.length; i++) {
+    const b = bars[i]!;
+    const h = Math.max(2, (b.value / maxVal) * chartH);
+    const x = 10 + i * (barW + gap);
+    const y = chartH - h;
+    barsHtml += `<rect x="${x}" y="${y}" width="${barW}" height="${h}" rx="2" fill="#d7a562"/>`;
+    barsHtml += `<text x="${x + barW / 2}" y="${y - 3}" text-anchor="middle" style="font-size:7px;fill:#1a1511;font-weight:700">${b.value}</text>`;
+    barsHtml += `<text x="${x + barW / 2}" y="${chartH + 12}" text-anchor="middle" style="font-size:6px;fill:#8a7e72">${esc(b.label)}</text>`;
   }
-
-  // ── Top voices ──
-  let voicesHtml = '';
-  for (let i = 0; i < Math.min(5, d.topVoices.length); i++) {
-    const v = d.topVoices[i]!;
-    const catBadge = v.category
-      ? `<span class="cat-badge" style="background:${catColorCss(v.category)}">${esc(d.categoryLabels[v.category])}</span>`
-      : '';
-    voicesHtml += `<div class="voice-row">
-      <span class="voice-num">${i + 1}</span>
-      <span class="voice-handle">${esc(v.handle)}</span>
-      ${catBadge}
-      <span class="voice-count">${v.n}</span>
-    </div>`;
-  }
-
-  // ── Top hashtags ──
-  let hashtagsHtml = '';
-  const maxTag = Math.max(1, ...d.topHashtags.map(tc => tc.count));
-  for (let i = 0; i < Math.min(8, d.topHashtags.length); i++) {
-    const tc = d.topHashtags[i]!;
-    const w = Math.round((tc.count / maxTag) * 100);
-    hashtagsHtml += `<div class="bar-row">
-      <span class="voice-num">${i + 1}</span>
-      <span class="bar-label" style="width:80px">${esc(tc.tag)}</span>
-      <div class="bar-track"><div class="bar-fill" style="width:${w}%;background:#d7a562"></div></div>
-      <span class="bar-val">${tc.count}</span>
-    </div>`;
-  }
-
-  // ── Highlights only (selected posts or auto-picked) ──
-  const highlightPosts = [...d.extendedHighlights].sort(
-    (a, b) => new Date(b.posted_at ?? b.captured_at).getTime() - new Date(a.posted_at ?? a.captured_at).getTime(),
-  );
-
-  // ── SVG Doughnut chart helper ──
-  function svgDoughnut(segments: Array<{ value: number; color: string; label: string }>, size: number): string {
-    const total = segments.reduce((s, seg) => s + seg.value, 0);
-    if (total === 0) return '';
-    const cx = size / 2;
-    const cy = size / 2;
-    const r = size * 0.35;
-    const strokeW = size * 0.12;
-    const circumference = 2 * Math.PI * r;
-    let offset = 0;
-    let arcs = '';
-    let legendHtml = '';
-    for (const seg of segments) {
-      const pct = seg.value / total;
-      const dashLen = pct * circumference;
-      arcs += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${seg.color}" stroke-width="${strokeW}" stroke-dasharray="${dashLen} ${circumference - dashLen}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${cx} ${cy})"/>`;
-      offset += dashLen;
-      legendHtml += `<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px"><span style="width:8px;height:8px;border-radius:50%;background:${seg.color};flex-shrink:0"></span><span style="font-size:8px;color:#1a1511">${esc(seg.label)}</span><span style="font-size:8px;font-weight:700;color:#1a1511;margin-inline-start:auto">${seg.value} (${Math.round(pct * 100)}%)</span></div>`;
-    }
-    return `<div style="display:flex;align-items:center;gap:10px"><svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${arcs}<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="central" style="font-size:${size * 0.14}px;font-weight:700;fill:#1a1511">${total}</text></svg><div style="flex:1">${legendHtml}</div></div>`;
-  }
-
-  // ── SVG Bar chart helper ──
-  function svgBarChart(bars: Array<{ label: string; value: number }>, width: number, height: number): string {
-    if (bars.length === 0) return '';
-    const maxVal = Math.max(1, ...bars.map(b => b.value));
-    const barW = Math.min(30, (width - 20) / bars.length * 0.7);
-    const gap = (width - 20 - barW * bars.length) / Math.max(1, bars.length - 1);
-    const chartH = height - 30;
-    let barsHtml = '';
-    for (let i = 0; i < bars.length; i++) {
-      const b = bars[i]!;
-      const h = Math.max(2, (b.value / maxVal) * chartH);
-      const x = 10 + i * (barW + gap);
-      const y = chartH - h;
-      barsHtml += `<rect x="${x}" y="${y}" width="${barW}" height="${h}" rx="2" fill="#d7a562"/>`;
-      barsHtml += `<text x="${x + barW / 2}" y="${y - 3}" text-anchor="middle" style="font-size:7px;fill:#1a1511;font-weight:700">${b.value}</text>`;
-      barsHtml += `<text x="${x + barW / 2}" y="${chartH + 12}" text-anchor="middle" style="font-size:6px;fill:#8a7e72">${esc(b.label)}</text>`;
-    }
-    return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><line x1="10" y1="${chartH}" x2="${width - 10}" y2="${chartH}" stroke="#ebe0d0" stroke-width="0.5"/>${barsHtml}</svg>`;
-  }
-
-  // ── Build chart HTML ──
-  const catChartSegments = activeCategories.map(c => ({
-    value: d.categoryCounts[c] ?? 0,
-    color: catColorCss(c),
-    label: d.categoryLabels[c],
-  }));
-  const originChartSegments = [
-    { value: d.individualCount, color: '#70A3C2', label: d.comprehensiveLabels.individual },
-    { value: d.companyCount, color: '#d7a562', label: d.comprehensiveLabels.company },
-  ].filter(s => s.value > 0);
-  const dailyBars = d.dailyCounts.map(dc => ({ label: dc.label.split(' ')[0] ?? dc.label, value: dc.count }));
-
-  return `<!DOCTYPE html>
-<html lang="${d.isRtl ? 'ar' : 'en'}" dir="${dir}">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>${esc(d.labels.brand)} — ${d.isRtl ? 'التقرير الشامل' : 'Comprehensive Report'}</title>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap');
-*{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-body{font-family:'Cairo',sans-serif;background:#f5ede3;color:#1a1511;line-height:1.4}
-.report{width:100%;max-width:595px;background:#faf6f0;margin:0 auto;padding:16px 20px}
-@media print{
-  @page{size:A4 portrait;margin:8mm 10mm}
-  html,body{margin:0!important;padding:0!important;background:#faf6f0!important}
-  .report{max-width:100%!important;padding:0!important}
-  .no-print{display:none!important}
-}
-.page-break{page-break-before:always}
-
-h1{font-size:20px;font-weight:800;color:#1a1511;margin:0}
-h2{font-size:16px;font-weight:700;color:#174766;margin:16px 0 8px;display:flex;align-items:center;gap:6px}
-h2::before{content:'';width:14px;height:2px;background:#d7a562;border-radius:1px;flex-shrink:0}
-.subtitle{font-size:10px;color:#8a7e72;margin-top:2px}
-.gold{color:#d7a562}
-.divider{height:1px;background:linear-gradient(90deg,transparent,#d7a562,transparent);opacity:0.4;margin:10px 0}
-.header{display:flex;align-items:start;justify-content:space-between;gap:12px;margin-bottom:6px}
-.date-card{background:rgba(255,255,255,0.5);border:0.5px solid rgba(215,165,98,0.1);border-radius:8px;padding:6px 14px;text-align:start}
-.date-primary{font-size:13px;font-weight:700;color:#1a1511}
-.date-secondary{font-size:10px;color:#8a7e72}
-.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:10px 0}
-.kpi{background:rgba(255,255,255,0.5);border:0.5px solid rgba(215,165,98,0.06);border-radius:8px;padding:8px 6px;text-align:center}
-.kpi-val{font-size:20px;font-weight:700;line-height:1}
-.kpi-label{font-size:8px;font-weight:600;color:#8a7e72;margin-top:4px}
-.panels{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:8px 0}
-.panel{background:rgba(255,255,255,0.45);border:0.5px solid rgba(215,165,98,0.06);border-radius:8px;padding:8px 10px}
-.panel-title{font-size:10px;font-weight:700;color:#174766;margin-bottom:6px;padding-bottom:4px;border-bottom:0.5px solid rgba(215,165,98,0.1);display:flex;align-items:center;gap:4px}
-.panel-title::before{content:'';width:4px;height:4px;border-radius:50%;background:#d7a562;flex-shrink:0}
-.bar-row{display:flex;align-items:center;gap:4px;margin-bottom:3px}
-.bar-label{width:55px;font-size:9px;font-weight:600;color:#8a7e72;flex-shrink:0}
-.bar-track{flex:1;height:6px;border-radius:3px;background:#ebe0d0;overflow:hidden}
-.bar-fill{height:100%;border-radius:3px}
-.bar-val{width:20px;font-size:10px;font-weight:700;color:#1a1511;text-align:end;flex-shrink:0}
-.bar-pct{width:24px;font-size:8px;color:#8a7e72;text-align:end;flex-shrink:0}
-.voice-row{display:flex;align-items:center;gap:5px;margin-bottom:3px}
-.voice-num{width:16px;height:16px;border-radius:50%;background:rgba(215,165,98,0.1);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#d7a562;flex-shrink:0}
-.voice-handle{flex:1;font-size:10px;font-weight:600;color:#1a1511;direction:ltr;text-align:start;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.voice-count{font-size:11px;font-weight:700;color:#1a1511;flex-shrink:0}
-.cat-badge{font-size:7px;font-weight:700;padding:1px 6px;border-radius:3px;color:#fff;flex-shrink:0}
-.video-badge-sm{position:absolute;bottom:4px;${d.isRtl ? 'left' : 'right'}:4px;font-size:7px;font-weight:700;padding:1px 5px;border-radius:3px;background:#c0392b;color:#fff}
-.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
-.chart-panel{background:rgba(255,255,255,0.45);border:0.5px solid rgba(215,165,98,0.06);border-radius:8px;padding:8px 10px}
-.card-link{font-size:7px;font-weight:700;color:#174766;text-decoration:none;margin-top:2px}
-.card-link:hover{text-decoration:underline}
-.highlights-grid{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:6px;flex:1;min-height:0}
-.highlight-card{background:rgba(255,255,255,0.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:8px;overflow:hidden;border:0.5px solid rgba(215,165,98,0.06);display:flex;flex-direction:column;break-inside:avoid}
-.card-thumb{position:relative;flex:1;min-height:80px;overflow:hidden;background:#ebe0d0}
-.card-img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block}
-.card-img-empty{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:14px;opacity:0.15}
-.card-body{padding:4px 8px 5px;display:flex;flex-direction:column;gap:1px;flex-shrink:0}
-.card-header{display:flex;align-items:center;justify-content:space-between;gap:3px}
-.card-handle{font-size:9px;font-weight:700;color:#1a1511;direction:ltr;text-align:start;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.card-date{font-size:8px;color:#8a7e72}
-.card-text{font-size:8px;line-height:1.3;color:#1a1511;opacity:0.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;margin:1px 0 0}
-</style>
-</head>
-<body>
-
-<div class="report">
-  <!-- ═══ Executive Summary ═══ -->
-  <div class="header">
-    <div>
-      <div class="gold" style="font-size:14px;font-weight:800;letter-spacing:1px">${d.isRtl ? 'التفاعل الإعلامي لبطاقة نسك' : 'Nusuk Card Media Coverage'}</div>
-      <h1>${esc(d.labels.execSummaryDated)}</h1>
-      <div class="subtitle">${d.isRtl ? 'بطاقة نسك - مسار التوعية و التدريب' : 'Nusuk Card — Awareness & Training Track'}</div>
-    </div>
-    <div class="date-card">
-      <div style="font-size:7px;color:#8a7e72;font-weight:600;letter-spacing:1px;text-transform:uppercase">${esc(d.labels.period)}</div>
-      <div class="date-primary">${esc(primaryDate)}</div>
-      <div class="date-secondary">${esc(secondaryDate)}</div>
-    </div>
-  </div>
-  <div class="divider"></div>
-
-  <div class="kpi-grid">
-    ${kpis.map(k => `<div class="kpi">
-      <div class="kpi-val" style="color:${k.color || '#1a1511'};${k.small ? 'font-size:14px' : ''}">${esc(k.v)}</div>
-      <div class="kpi-label">${esc(k.l)}</div>
-    </div>`).join('')}
-  </div>
-
-  <div style="background:rgba(255,255,255,0.4);border-radius:6px;padding:8px 10px;margin:6px 0">
-    <div style="font-size:9px;font-weight:700;color:#d7a562;margin-bottom:2px">${esc(d.labels.headline)}</div>
-    <div style="font-size:10px;color:#1a1511">${esc(d.headline)}</div>
-  </div>
-
-  <div class="panels">
-    <div class="panel">
-      <div class="panel-title">${esc(d.labels.categories)}</div>
-      ${catHtml}
-    </div>
-    <div class="panel">
-      <div class="panel-title">${esc(d.labels.topVoices)}</div>
-      ${voicesHtml}
-    </div>
-    <div class="panel">
-      <div class="panel-title">${esc(d.labels.topHashtags)}</div>
-      ${hashtagsHtml}
-    </div>
-  </div>
-
-  <!-- ═══ Charts & Analysis ═══ -->
-  <h2>${esc(d.comprehensiveLabels.coverageAnalysis)}</h2>
-  <div class="divider"></div>
-
-  <div class="charts-row">
-    <div class="chart-panel">
-      <div class="panel-title">${esc(d.comprehensiveLabels.categoryDistribution)}</div>
-      ${svgDoughnut(catChartSegments, 120)}
-    </div>
-    <div class="chart-panel">
-      <div class="panel-title">${esc(d.comprehensiveLabels.originBreakdown)}</div>
-      ${svgDoughnut(originChartSegments, 120)}
-    </div>
-  </div>
-
-  <div class="chart-panel" style="margin:8px 0">
-    <div class="panel-title">${esc(d.comprehensiveLabels.dailyTrend)}</div>
-    ${svgBarChart(dailyBars, 500, 140)}
-  </div>
-
-  ${d.mediaBreakdown.video > 0 || d.mediaBreakdown.gif > 0 ? `
-  <div class="chart-panel" style="margin:8px 0">
-    <div class="panel-title">${esc(d.comprehensiveLabels.mediaBreakdown)}</div>
-    ${svgDoughnut([
-      { value: d.mediaBreakdown.image, color: '#174766', label: d.isRtl ? 'صور' : 'Images' },
-      { value: d.mediaBreakdown.video, color: '#c0392b', label: d.comprehensiveLabels.video },
-      ...(d.mediaBreakdown.gif > 0 ? [{ value: d.mediaBreakdown.gif, color: '#d7a562', label: 'GIF' }] : []),
-      ...(d.mediaBreakdown.none > 0 ? [{ value: d.mediaBreakdown.none, color: '#8a7e72', label: d.isRtl ? 'نص فقط' : 'Text only' }] : []),
-    ].filter(s => s.value > 0), 100)}
-  </div>` : ''}
-
-  <!-- ═══ Highlights ═══ -->
-  ${highlightPosts.length > 0 ? `
-  <div class="page-break"></div>
-  <h2>${esc(d.labels.highlights)}</h2>
-  <div class="subtitle" style="margin-bottom:8px">${highlightPosts.length} ${d.isRtl ? 'منشور مميز' : 'featured posts'}${d.hasManualSelection ? ` (${d.allPosts.length} ${d.isRtl ? 'إجمالي في الفترة' : 'total in period'})` : ''} · ${esc(primaryDate)}</div>
-  <div class="divider"></div>
-  <div class="highlights-grid">
-    ${highlightPosts.map(p => {
-      const handle = p.metadata?.author_handle ?? p.metadata?.author_name ?? '—';
-      const text = (p.metadata?.text ?? '').slice(0, 80);
-      const dateLabel = d.datePostedLabel(p);
-      const imgUrl = p.screenshot_url ? toAbsoluteUrl(p.screenshot_url) : null;
-      const cat = p.origin === 'company' ? (p.company_category ?? 'unclassified') as Category : null;
-      const isVideo = p.latest_capture?.media === 'video';
-      return `<div class="highlight-card">
-        <div class="card-thumb">${imgUrl ? `<img src="${esc(imgUrl)}" crossorigin="anonymous" class="card-img"/>` : `<div class="card-img-empty">—</div>`}${isVideo ? `<span class="video-badge-sm">▶ ${esc(d.comprehensiveLabels.video)}</span>` : ''}</div>
-        <div class="card-body">
-          <div class="card-header">
-            <span class="card-handle">${esc(handle)}</span>
-            ${cat ? `<span class="cat-badge" style="background:${catColorCss(cat)}">${esc(d.categoryLabels[cat])}</span>` : ''}
-          </div>
-          <span class="card-date">${esc(dateLabel)}</span>
-          <p class="card-text">${esc(text)}</p>
-          <a href="${esc(p.url)}" class="card-link" target="_blank">${esc(d.comprehensiveLabels.viewOriginal)}</a>
-        </div>
-      </div>`;
-    }).join('')}
-  </div>
-  ` : ''}
-</div>
-
-</body>
-</html>`;
+  return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><line x1="10" y1="${chartH}" x2="${width - 10}" y2="${chartH}" stroke="#ebe0d0" stroke-width="0.5"/>${barsHtml}</svg>`;
 }
 
 export async function openComprehensivePreview(data: ComprehensiveData): Promise<void> {
-  const html = buildComprehensiveHtml(data);
+  // Page 1: exact poster PDF output
+  const posterData: PosterData = {
+    ...data,
+    totalCaptured: data.totalCaptured,
+    showLogo: data.showLogo,
+  };
+  const screenshotUrls = new Map<string, string>();
+  for (const p of data.highlights.slice(0, 6)) {
+    if (p.screenshot_url) {
+      const abs = p.screenshot_url.startsWith('http') ? p.screenshot_url : window.location.origin + p.screenshot_url;
+      screenshotUrls.set(p.id, abs);
+    }
+  }
+  const posterHtml = buildPosterHtml(posterData, screenshotUrls);
+
+  // Extract poster body content (between <body> and </body>)
+  const bodyMatch = posterHtml.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+  const posterBody = bodyMatch ? bodyMatch[1] : '';
+
+  // Extract poster styles (between <style> and </style>)
+  const styleMatch = posterHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+  const posterStyles = styleMatch ? styleMatch[1] : '';
+
+  // Charts data
+  const activeCategories = data.categoryOrder.filter(c => (data.categoryCounts[c] ?? 0) > 0);
+  const catChartSegments = activeCategories.map(c => ({
+    value: data.categoryCounts[c] ?? 0,
+    color: '#' + CAT_HEX[c],
+    label: data.categoryLabels[c],
+  }));
+  const originChartSegments = [
+    { value: data.individualCount, color: '#70A3C2', label: data.comprehensiveLabels.individual },
+    { value: data.companyCount, color: '#d7a562', label: data.comprehensiveLabels.company },
+  ].filter(s => s.value > 0);
+  const dailyBars = data.dailyCounts.map(dc => ({ label: dc.label.split(' ')[0] ?? dc.label, value: dc.count }));
+
+  // Highlights (limited to highlightCount)
+  const hlPosts = [...data.extendedHighlights]
+    .sort((a, b) => new Date(b.posted_at ?? b.captured_at).getTime() - new Date(a.posted_at ?? a.captured_at).getTime())
+    .slice(0, data.highlightCount);
+  const hlRows = Math.ceil(hlPosts.length / 3);
+
+  let hlCardsHtml = '';
+  for (const p of hlPosts) {
+    const handle = p.metadata?.author_handle ?? '';
+    const text = (p.metadata?.text ?? '').slice(0, 80);
+    const dateLabel = data.datePostedLabel(p);
+    const imgUrl = p.screenshot_url ? (p.screenshot_url.startsWith('http') ? p.screenshot_url : window.location.origin + p.screenshot_url) : null;
+    const cat = p.origin === 'company' ? (p.company_category ?? 'unclassified') as Category : null;
+    const isVideo = p.latest_capture?.media === 'video';
+
+    const thumbInner = imgUrl
+      ? `<img src="${esc(imgUrl)}" crossorigin="anonymous" style="width:100%;height:100%;object-fit:cover;object-position:top"/>`
+      : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:20px;opacity:0.15">\u{1F4F8}</div>`;
+    const catBadge = cat
+      ? `<span style="font-size:7px;font-weight:600;padding:1px 5px;border-radius:3px;background:rgba(215,165,98,0.1);color:#d7a562;flex-shrink:0">${esc(data.categoryLabels[cat])}</span>`
+      : '';
+    const videoBadge = isVideo
+      ? `<div style="position:absolute;top:3px;${data.isRtl ? 'left' : 'right'}:3px;font-size:7px;font-weight:700;padding:1px 5px;border-radius:3px;background:#c0392b;color:#fff">▶ ${esc(data.comprehensiveLabels.video)}</div>`
+      : '';
+
+    hlCardsHtml += `<div style="background:rgba(255,255,255,0.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:8px;overflow:hidden;border:0.5px solid rgba(215,165,98,0.06);display:flex;flex-direction:column;height:100%;min-height:0">
+      <div style="flex:1;min-height:0;overflow:hidden;background:#ebe0d0;position:relative">${thumbInner}${videoBadge}</div>
+      <div style="padding:4px 8px 5px;display:flex;flex-direction:column;gap:1px;flex-shrink:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:3px">
+          <span style="font-size:9px;font-weight:700;color:#1a1511;direction:ltr;text-align:start">${esc(handle || p.metadata?.author_name || '—')}</span>
+          ${catBadge}
+        </div>
+        <span style="font-size:8px;color:#8a7e72">${esc(dateLabel)}</span>
+        <p style="font-size:8px;line-height:1.3;color:#1a1511;opacity:0.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;margin:1px 0 0">${esc(text)}</p>
+        <a href="${esc(p.url)}" target="_blank" style="font-size:7px;font-weight:700;color:#174766;text-decoration:none;margin-top:1px">${esc(data.comprehensiveLabels.viewOriginal)}</a>
+      </div>
+    </div>`;
+  }
+
+  const dir = data.isRtl ? 'rtl' : 'ltr';
+  const fullHtml = `<!DOCTYPE html>
+<html lang="${data.isRtl ? 'ar' : 'en'}" dir="${dir}">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>${esc(data.labels.brand)} — ${data.isRtl ? 'التقرير الشامل' : 'Comprehensive Report'}</title>
+<style>
+${posterStyles}
+.page-break{page-break-before:always}
+.charts-section{padding:12px 20px}
+.chart-panel{background:rgba(255,255,255,0.45);border:0.5px solid rgba(215,165,98,0.06);border-radius:8px;padding:8px 10px;margin-bottom:8px}
+.chart-title{font-size:10px;font-weight:700;color:#174766;margin-bottom:6px;padding-bottom:4px;border-bottom:0.5px solid rgba(215,165,98,0.1);display:flex;align-items:center;gap:4px}
+.chart-title::before{content:'';width:4px;height:4px;border-radius:50%;background:#d7a562;flex-shrink:0}
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.section-title{font-size:14px;font-weight:700;color:#174766;margin:10px 0 6px;display:flex;align-items:center;gap:6px}
+.section-title::before{content:'';width:14px;height:2px;background:#d7a562;border-radius:1px;flex-shrink:0}
+.gold-divider{height:0.5px;background:linear-gradient(90deg,transparent,#d7a562,transparent);opacity:0.4;margin:8px 0}
+</style>
+</head>
+<body>
+${posterBody}
+
+<div class="page-break"></div>
+<div class="poster" style="padding-top:12px">
+  <div class="charts-section">
+    <div class="section-title">${esc(data.comprehensiveLabels.coverageAnalysis)}</div>
+    <div class="gold-divider"></div>
+
+    <div class="charts-row">
+      <div class="chart-panel">
+        <div class="chart-title">${esc(data.comprehensiveLabels.categoryDistribution)}</div>
+        ${svgDoughnut(catChartSegments, 120)}
+      </div>
+      <div class="chart-panel">
+        <div class="chart-title">${esc(data.comprehensiveLabels.originBreakdown)}</div>
+        ${svgDoughnut(originChartSegments, 120)}
+      </div>
+    </div>
+
+    <div class="chart-panel">
+      <div class="chart-title">${esc(data.comprehensiveLabels.dailyTrend)}</div>
+      ${svgBarChart(dailyBars, 500, 140)}
+    </div>
+
+    ${data.mediaBreakdown.video > 0 || data.mediaBreakdown.gif > 0 ? `
+    <div class="chart-panel">
+      <div class="chart-title">${esc(data.comprehensiveLabels.mediaBreakdown)}</div>
+      ${svgDoughnut([
+        { value: data.mediaBreakdown.image, color: '#174766', label: data.isRtl ? 'صور' : 'Images' },
+        { value: data.mediaBreakdown.video, color: '#c0392b', label: data.comprehensiveLabels.video },
+        ...(data.mediaBreakdown.gif > 0 ? [{ value: data.mediaBreakdown.gif, color: '#d7a562', label: 'GIF' }] : []),
+        ...(data.mediaBreakdown.none > 0 ? [{ value: data.mediaBreakdown.none, color: '#8a7e72', label: data.isRtl ? 'نص فقط' : 'Text only' }] : []),
+      ].filter(s => s.value > 0), 100)}
+    </div>` : ''}
+  </div>
+</div>
+
+${hlPosts.length > 0 ? `
+<div class="page-break"></div>
+<div class="poster" style="padding-top:12px">
+  <div style="padding:6px 18px 10px;display:flex;flex-direction:column;min-height:0">
+    <div style="margin-bottom:4px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <h3 style="font-size:12px;font-weight:700;color:#174766;display:flex;align-items:center;gap:6px;margin:0"><span style="width:16px;height:1.5px;background:#d7a562;border-radius:1px"></span>${esc(data.labels.highlights)}</h3>
+        <span style="font-size:9px;color:#8a7e72">${hlPosts.length} ${data.isRtl ? 'منشورات' : 'posts'}${data.hasManualSelection ? ` (${data.allPosts.length} ${data.isRtl ? 'إجمالي' : 'total'})` : ''}</span>
+      </div>
+      <p style="font-size:8px;color:#8a7e72;margin:2px 0 0 22px">${esc(data.labels.highlightsDesc)}</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(${hlRows},1fr);gap:6px;flex:1;min-height:0">
+      ${hlCardsHtml}
+    </div>
+  </div>
+</div>` : ''}
+
+</body>
+</html>`;
+
   const win = window.open('', '_blank');
   if (!win) return;
   win.document.open();
-  win.document.write(html);
+  win.document.write(fullHtml);
   win.document.close();
 
   const imgs = win.document.querySelectorAll('img');

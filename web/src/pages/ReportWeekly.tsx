@@ -111,6 +111,7 @@ export function ReportWeeklyPage() {
   const [comprehensiveLoading, setComprehensiveLoading] = useState(false);
   const [dateSystem, setDateSystem] = useState<DateSystem>('gregorian');
   const [showLogo, setShowLogo] = useState(true);
+  const [highlightCount, setHighlightCount] = useState(9);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
@@ -505,6 +506,7 @@ export function ReportWeeklyPage() {
       extendedHighlights: pickedHighlights,
       allPosts: thisWeek,
       hasManualSelection: selectedIds.size > 0,
+      highlightCount,
       comprehensiveLabels: {
         coverageAnalysis: t('reports.comprehensive.coverage_analysis'),
         dailyTrend: t('reports.comprehensive.daily_trend'),
@@ -620,6 +622,17 @@ export function ReportWeeklyPage() {
           <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
             <Checkbox checked={showLogo} onChange={setShowLogo} />
             {t('reports.weekly.show_logo')}
+          </label>
+          <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            {t('reports.comprehensive.highlight_count')}
+            <input
+              type="number"
+              min={1}
+              max={30}
+              value={highlightCount}
+              onChange={(e) => setHighlightCount(Math.max(1, Math.min(30, Number(e.target.value) || 9)))}
+              className="w-14 rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground text-center"
+            />
           </label>
           <button
             onClick={() => window.print()}
