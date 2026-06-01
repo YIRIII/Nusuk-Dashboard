@@ -148,13 +148,33 @@ export function exportRouter(): Router {
       });
       archive.pipe(res);
 
-      const manifest = rows.map((r) => {
+      // Build a row-number + folder map so screenshot names match the Excel.
+      // Row 1 is the header, so data rows start at 2.
+      const screenshotEntries: Array<{
+        row: JoinedRow;
+        folder: string;
+        filename: string;
+      }> = [];
+      const companyIdx = { n: 0 };
+      const individualIdx = { n: 0 };
+      const manifest = rows.map((r, i) => {
         const meta = r.metadata as Record<string, unknown>;
+        const isCompany = r.origin === 'company';
+        const counter = isCompany ? companyIdx : individualIdx;
+        counter.n++;
+        const folder = isCompany ? 'screenshots/companies' : 'screenshots/individuals';
+        const filename = counter.n + '.png';
+
+        if (r._latest_capture) {
+          screenshotEntries.push({ row: r, folder, filename });
+        }
+
         return {
           id: r.id,
           url: r.url,
           kind: r.kind,
           origin: r.origin,
+          excel_row: i + 2,
           company: r._company
             ? { id: r._company.id, name_ar: r._company.name_ar, name_en: r._company.name_en }
             : null,
@@ -165,7 +185,7 @@ export function exportRouter(): Router {
           notes: r.notes,
           metadata: meta,
           screenshot: r._latest_capture
-            ? 'screenshots/' + r.id + '.png'
+            ? folder + '/' + filename
             : null,
         };
       });
@@ -176,24 +196,27 @@ export function exportRouter(): Router {
           new Date().toISOString() +
           '\nPosts: ' +
           rows.length +
+          '\nCompany screenshots: ' +
+          companyIdx.n +
+          '\nIndividual screenshots: ' +
+          individualIdx.n +
           '\n',
         { name: 'manifest.txt' },
       );
 
       // Download screenshots in parallel batches, then append to archive.
-      const withCapture = rows.filter((r) => r._latest_capture);
       const CONCURRENCY = 10;
-      for (let i = 0; i < withCapture.length; i += CONCURRENCY) {
-        const batch = withCapture.slice(i, i + CONCURRENCY);
+      for (let i = 0; i < screenshotEntries.length; i += CONCURRENCY) {
+        const batch = screenshotEntries.slice(i, i + CONCURRENCY);
         const results = await Promise.allSettled(
-          batch.map(async (r) => ({
-            id: r.id,
-            buf: await downloadScreenshot(r._latest_capture!.storage_path),
+          batch.map(async (entry) => ({
+            path: entry.folder + '/' + entry.filename,
+            buf: await downloadScreenshot(entry.row._latest_capture!.storage_path),
           })),
         );
         for (const result of results) {
           if (result.status === 'fulfilled') {
-            archive.append(result.value.buf, { name: 'screenshots/' + result.value.id + '.png' });
+            archive.append(result.value.buf, { name: result.value.path });
           } else {
             logger.warn(
               { err: result.reason, trace_id: req.traceId },
