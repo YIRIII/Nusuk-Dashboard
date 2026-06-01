@@ -834,29 +834,57 @@ export async function openComprehensivePreview(data: ComprehensiveData): Promise
     '</div>\n  </div>\n' + chartsHtml + '\n  <div style="padding:6px 18px 10px',
   );
 
-  // Inject URL links into each highlight card (after the text paragraph)
-  // The poster cards end with: </p>\n      </div>\n    </div>
-  // We need to add a link before the closing </div> of each card body
+  // Replace the poster's 6-card highlight grid with our N-card grid + URLs
   const hlPosts = [...data.extendedHighlights]
     .sort((a, b) => new Date(b.posted_at ?? b.captured_at).getTime() - new Date(a.posted_at ?? a.captured_at).getTime())
     .slice(0, data.highlightCount);
-  let cardIdx = 0;
+  const hlRows = Math.ceil(hlPosts.length / 3);
+
+  let newCardsHtml = '';
+  for (const p of hlPosts) {
+    const handle = p.metadata?.author_handle ?? '';
+    const text = (p.metadata?.text ?? '').slice(0, 80);
+    const dateLabel = data.datePostedLabel(p);
+    const imgUrl = p.screenshot_url ? (p.screenshot_url.startsWith('http') ? p.screenshot_url : window.location.origin + p.screenshot_url) : null;
+    const cat = p.origin === 'company' ? (p.company_category ?? 'unclassified') as Category : null;
+    const thumbInner = imgUrl
+      ? `<img src="${esc(imgUrl)}" crossorigin="anonymous" style="width:100%;height:100%;object-fit:cover;object-position:top"/>`
+      : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:20px;opacity:0.15">\u{1F4F8}</div>`;
+    const catBadge = cat
+      ? `<span style="font-size:7px;font-weight:600;padding:1px 5px;border-radius:3px;background:rgba(215,165,98,0.1);color:#d7a562;flex-shrink:0">${esc(data.categoryLabels[cat])}</span>`
+      : '';
+    const isVideo = p.latest_capture?.media === 'video';
+    const videoBadge = isVideo
+      ? `<div style="position:absolute;top:3px;${data.isRtl ? 'left' : 'right'}:3px;font-size:7px;font-weight:700;padding:1px 5px;border-radius:3px;background:#c0392b;color:#fff">▶ ${esc(data.comprehensiveLabels.video)}</div>`
+      : '';
+    newCardsHtml += `<div style="background:rgba(255,255,255,0.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:8px;overflow:hidden;border:0.5px solid rgba(215,165,98,0.06);display:flex;flex-direction:column;height:100%;min-height:0">
+      <div style="flex:1;min-height:0;overflow:hidden;background:#ebe0d0;position:relative">${thumbInner}${videoBadge}</div>
+      <div style="padding:4px 8px 5px;display:flex;flex-direction:column;gap:1px;flex-shrink:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:3px">
+          <span style="font-size:9px;font-weight:700;color:#1a1511;direction:ltr;text-align:start">${esc(handle || p.metadata?.author_name || '—')}</span>
+          ${catBadge}
+        </div>
+        <span style="font-size:8px;color:#8a7e72">${esc(dateLabel)}</span>
+        <p style="font-size:8px;line-height:1.3;color:#1a1511;opacity:0.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;margin:1px 0 0">${esc(text)}</p>
+        <a href="${esc(p.url)}" target="_blank" style="font-size:7px;font-weight:700;color:#174766;text-decoration:none;margin-top:1px">${esc(data.comprehensiveLabels.viewOriginal)}</a>
+      </div>
+    </div>`;
+  }
+
+  const newGrid = `<div style="display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(${hlRows},1fr);gap:6px;flex:1;min-height:0">
+      ${newCardsHtml}
+    </div>`;
+
+  // Replace the poster's highlight grid (find the grid div and everything inside it)
   fullHtml = fullHtml.replace(
-    /-webkit-box-orient:vertical;margin:1px 0 0">[^<]*<\/p>\s*<\/div>\s*<\/div>/g,
-    (match) => {
-      const post = hlPosts[cardIdx];
-      cardIdx++;
-      if (!post) return match;
-      const link = `<a href="${esc(post.url)}" target="_blank" style="font-size:7px;font-weight:700;color:#174766;text-decoration:none;margin-top:1px">${esc(data.comprehensiveLabels.viewOriginal)}</a>`;
-      return match.replace('</p>\n      </div>\n    </div>', '</p>\n        ' + link + '\n      </div>\n    </div>');
-    },
+    /<div style="display:grid;grid-template-columns:repeat\(3,1fr\);grid-template-rows:repeat\(2,1fr\);gap:6px;flex:1;min-height:0">[\s\S]*?<\/div>\s*<\/div>\s*<\/div>\s*<\/body>/,
+    newGrid + '\n  </div>\n</div>\n</body>',
   );
 
-  // Update grid to support more than 2 rows
-  const hlRows = Math.ceil(hlPosts.length / 3);
+  // Update the highlight count label
   fullHtml = fullHtml.replace(
-    'grid-template-rows:repeat(2,1fr)',
-    'grid-template-rows:repeat(' + hlRows + ',1fr)',
+    /(\d+) (منشورات|posts)/,
+    hlPosts.length + ' $2',
   );
 
   const win = window.open('', '_blank');
