@@ -775,79 +775,10 @@ function buildComprehensiveHtml(d: ComprehensiveData): string {
     </div>`;
   }
 
-  // ── Highlight cards ──
-  let highlightsHtml = '';
-  for (const p of d.extendedHighlights.slice(0, 12)) {
-    const handle = p.metadata?.author_handle ?? p.metadata?.author_name ?? '—';
-    const text = (p.metadata?.text ?? '').slice(0, 120);
-    const dateLabel = d.datePostedLabel(p);
-    const imgUrl = p.screenshot_url ? toAbsoluteUrl(p.screenshot_url) : null;
-    const cat = p.origin === 'company' ? (p.company_category ?? 'unclassified') as Category : null;
-    const isVideo = p.latest_capture?.media === 'video';
-
-    const imgInner = imgUrl
-      ? `<img src="${esc(imgUrl)}" crossorigin="anonymous" class="card-img"/>`
-      : `<div class="card-img-empty">—</div>`;
-    const catBadge = cat
-      ? `<span class="cat-badge" style="background:${catColorCss(cat)}">${esc(d.categoryLabels[cat])}</span>`
-      : '';
-    const videoBadge = isVideo
-      ? `<span class="video-badge">▶ ${esc(d.comprehensiveLabels.video)}</span>`
-      : '';
-
-    highlightsHtml += `<div class="highlight-card">
-      <div class="card-thumb">${imgInner}${videoBadge}</div>
-      <div class="card-body">
-        <div class="card-header">
-          <span class="card-handle">${esc(handle)}</span>
-          ${catBadge}
-        </div>
-        <span class="card-date">${esc(dateLabel)}</span>
-        <p class="card-text">${esc(text)}</p>
-        <a href="${esc(p.url)}" class="card-link" target="_blank">${esc(d.comprehensiveLabels.viewOriginal)}</a>
-      </div>
-    </div>`;
-  }
-
-  // ── Posts to show in detail: selected only, or all ──
-  const detailSource = d.hasManualSelection ? d.extendedHighlights : d.allPosts;
-  const sorted = [...detailSource].sort(
+  // ── Highlights only (selected posts or auto-picked) ──
+  const highlightPosts = [...d.extendedHighlights].sort(
     (a, b) => new Date(b.posted_at ?? b.captured_at).getTime() - new Date(a.posted_at ?? a.captured_at).getTime(),
   );
-  let allPostsHtml = '';
-  for (let i = 0; i < sorted.length; i++) {
-    const p = sorted[i]!;
-    const handle = p.metadata?.author_handle ?? p.metadata?.author_name ?? '—';
-    const fullText = p.metadata?.text ?? '—';
-    const dateLabel = d.datePostedLabel(p);
-    const imgUrl = p.screenshot_url ? toAbsoluteUrl(p.screenshot_url) : null;
-    const cat = p.origin === 'company' ? (p.company_category ?? 'unclassified') as Category : null;
-    const isVideo = p.latest_capture?.media === 'video';
-
-    const imgInner = imgUrl
-      ? `<img src="${esc(imgUrl)}" crossorigin="anonymous" class="post-img"/>`
-      : `<div class="post-img-empty">${esc(d.labels.noScreenshot)}</div>`;
-    const catBadge = cat
-      ? `<span class="cat-badge" style="background:${catColorCss(cat)}">${esc(d.categoryLabels[cat])}</span>`
-      : '';
-    const videoBadge = isVideo
-      ? `<span class="video-badge-sm">▶ ${esc(d.comprehensiveLabels.video)}</span>`
-      : '';
-
-    allPostsHtml += `<div class="post-row">
-      <div class="post-num">${i + 1}</div>
-      <div class="post-thumb">${imgInner}${videoBadge}</div>
-      <div class="post-content">
-        <div class="post-header">
-          <span class="post-handle">${esc(handle)}</span>
-          ${catBadge}
-          <span class="post-date">${esc(dateLabel)}</span>
-        </div>
-        <p class="post-text">${esc(fullText)}</p>
-        <a href="${esc(p.url)}" class="card-link" target="_blank">🔗 ${esc(d.comprehensiveLabels.viewOriginal)} — ${esc(p.url)}</a>
-      </div>
-    </div>`;
-  }
 
   // ── SVG Doughnut chart helper ──
   function svgDoughnut(segments: Array<{ value: number; color: string; label: string }>, size: number): string {
@@ -913,11 +844,11 @@ function buildComprehensiveHtml(d: ComprehensiveData): string {
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap');
 *{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 body{font-family:'Cairo',sans-serif;background:#f5ede3;color:#1a1511;line-height:1.4}
-.page{width:210mm;min-height:297mm;background:#faf6f0;margin:0 auto 8px;padding:14mm 16mm;position:relative;display:flex;flex-direction:column}
+.page{width:210mm;background:#faf6f0;margin:0 auto 8px;padding:14mm 16mm}
 @media print{
   @page{size:A4 portrait;margin:0}
   html,body{margin:0!important;padding:0!important;background:#faf6f0!important}
-  .page{width:100%!important;min-height:auto!important;margin:0!important;padding:12mm 14mm!important;page-break-after:always}
+  .page{width:100%!important;margin:0!important;padding:12mm 14mm!important;page-break-after:always}
   .page:last-child{page-break-after:avoid}
   .no-print{display:none!important}
 }
@@ -954,18 +885,18 @@ h2::before{content:'';width:14px;height:2px;background:#d7a562;border-radius:1px
 .video-badge-sm{position:absolute;bottom:4px;${d.isRtl ? 'left' : 'right'}:4px;font-size:7px;font-weight:700;padding:1px 5px;border-radius:3px;background:#c0392b;color:#fff}
 .charts-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
 .chart-panel{background:rgba(255,255,255,0.45);border:0.5px solid rgba(215,165,98,0.06);border-radius:8px;padding:8px 10px}
-.post-row{display:flex;gap:10px;padding:8px 0;border-bottom:0.5px solid rgba(215,165,98,0.1);break-inside:avoid;page-break-inside:avoid}
-.post-num{width:24px;height:24px;border-radius:6px;background:#d7a562;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
-.post-thumb{width:130px;height:90px;border-radius:6px;overflow:hidden;flex-shrink:0;background:#ebe0d0;position:relative}
-.post-img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block}
-.post-img-empty{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:8px;color:#8a7e72}
-.post-content{flex:1;min-width:0}
-.post-header{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px}
-.post-handle{font-size:11px;font-weight:700;color:#1a1511;direction:ltr}
-.post-date{font-size:9px;color:#8a7e72;margin-inline-start:auto}
-.post-text{font-size:9px;line-height:1.4;color:#1a1511;margin:3px 0}
 .card-link{font-size:7px;font-weight:700;color:#174766;text-decoration:none;margin-top:2px}
 .card-link:hover{text-decoration:underline}
+.highlights-grid{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:6px;flex:1;min-height:0}
+.highlight-card{background:rgba(255,255,255,0.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:8px;overflow:hidden;border:0.5px solid rgba(215,165,98,0.06);display:flex;flex-direction:column;break-inside:avoid}
+.card-thumb{position:relative;flex:1;min-height:80px;overflow:hidden;background:#ebe0d0}
+.card-img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block}
+.card-img-empty{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:14px;opacity:0.15}
+.card-body{padding:4px 8px 5px;display:flex;flex-direction:column;gap:1px;flex-shrink:0}
+.card-header{display:flex;align-items:center;justify-content:space-between;gap:3px}
+.card-handle{font-size:9px;font-weight:700;color:#1a1511;direction:ltr;text-align:start;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.card-date{font-size:8px;color:#8a7e72}
+.card-text{font-size:8px;line-height:1.3;color:#1a1511;opacity:0.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;margin:1px 0 0}
 </style>
 </head>
 <body>
@@ -1058,13 +989,34 @@ h2::before{content:'';width:14px;height:2px;background:#d7a562;border-radius:1px
   </div>
 </div>
 
-<!-- ═══ PAGES 3+: All Posts ═══ -->
-<div class="page">
-  <h2>${esc(d.comprehensiveLabels.allCoverage)}</h2>
-  <div class="subtitle" style="margin-bottom:8px">${sorted.length} ${d.isRtl ? 'منشور مختار' : 'featured posts'}${d.hasManualSelection ? ` (${d.allPosts.length} ${d.isRtl ? 'إجمالي في الفترة' : 'total in period'})` : ''} · ${esc(primaryDate)}</div>
+<!-- ═══ PAGE 3: Highlights ═══ -->
+${highlightPosts.length > 0 ? `<div class="page">
+  <h2>${esc(d.labels.highlights)}</h2>
+  <div class="subtitle" style="margin-bottom:8px">${highlightPosts.length} ${d.isRtl ? 'منشور مميز' : 'featured posts'}${d.hasManualSelection ? ` (${d.allPosts.length} ${d.isRtl ? 'إجمالي في الفترة' : 'total in period'})` : ''} · ${esc(primaryDate)}</div>
   <div class="divider"></div>
-  ${allPostsHtml}
-</div>
+  <div class="highlights-grid">
+    ${highlightPosts.map(p => {
+      const handle = p.metadata?.author_handle ?? p.metadata?.author_name ?? '—';
+      const text = (p.metadata?.text ?? '').slice(0, 80);
+      const dateLabel = d.datePostedLabel(p);
+      const imgUrl = p.screenshot_url ? toAbsoluteUrl(p.screenshot_url) : null;
+      const cat = p.origin === 'company' ? (p.company_category ?? 'unclassified') as Category : null;
+      const isVideo = p.latest_capture?.media === 'video';
+      return `<div class="highlight-card">
+        <div class="card-thumb">${imgUrl ? `<img src="${esc(imgUrl)}" crossorigin="anonymous" class="card-img"/>` : `<div class="card-img-empty">—</div>`}${isVideo ? `<span class="video-badge-sm">▶ ${esc(d.comprehensiveLabels.video)}</span>` : ''}</div>
+        <div class="card-body">
+          <div class="card-header">
+            <span class="card-handle">${esc(handle)}</span>
+            ${cat ? `<span class="cat-badge" style="background:${catColorCss(cat)}">${esc(d.categoryLabels[cat])}</span>` : ''}
+          </div>
+          <span class="card-date">${esc(dateLabel)}</span>
+          <p class="card-text">${esc(text)}</p>
+          <a href="${esc(p.url)}" class="card-link" target="_blank">${esc(d.comprehensiveLabels.viewOriginal)}</a>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>
+</div>` : ''}
 
 </body>
 </html>`;

@@ -135,7 +135,7 @@ export function ReportWeeklyPage() {
       setStartISO(minDate.toISOString().slice(0, 10));
       setEndISO(maxDate.toISOString().slice(0, 10));
     }
-  }, [idsParam, allRows.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [idsParam, allRows.length]);
 
   const start = useMemo(() => new Date(startISO + 'T00:00:00'), [startISO]);
   const end = useMemo(() => {
