@@ -781,6 +781,8 @@ export async function openComprehensivePreview(data: ComprehensiveData): Promise
   @page{size:A4 portrait;margin:8mm 12mm}
   html,body{height:auto!important;overflow:visible!important}
   .poster{height:auto!important;min-height:auto!important;overflow:visible!important}
+  .poster>div{overflow:visible!important;height:auto!important;flex:none!important}
+  .hl-card{break-inside:avoid;page-break-inside:avoid}
 }
 </style>`,
   );
@@ -841,7 +843,6 @@ export async function openComprehensivePreview(data: ComprehensiveData): Promise
   const hlPosts = [...data.extendedHighlights]
     .sort((a, b) => new Date(b.posted_at ?? b.captured_at).getTime() - new Date(a.posted_at ?? a.captured_at).getTime())
     .slice(0, data.highlightCount);
-  const hlRows = Math.ceil(hlPosts.length / 3);
 
   let newCardsHtml = '';
   for (const p of hlPosts) {
@@ -860,8 +861,8 @@ export async function openComprehensivePreview(data: ComprehensiveData): Promise
     const videoBadge = isVideo
       ? `<div style="position:absolute;top:3px;${data.isRtl ? 'left' : 'right'}:3px;font-size:7px;font-weight:700;padding:1px 5px;border-radius:3px;background:#c0392b;color:#fff">▶ ${esc(data.comprehensiveLabels.video)}</div>`
       : '';
-    newCardsHtml += `<div style="background:rgba(255,255,255,0.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:8px;overflow:hidden;border:0.5px solid rgba(215,165,98,0.06);display:flex;flex-direction:column;height:100%;min-height:0">
-      <div style="flex:1;min-height:0;overflow:hidden;background:#ebe0d0;position:relative">${thumbInner}${videoBadge}</div>
+    newCardsHtml += `<div class="hl-card" style="background:rgba(255,255,255,0.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:8px;overflow:hidden;border:0.5px solid rgba(215,165,98,0.06);display:flex;flex-direction:column;break-inside:avoid;page-break-inside:avoid">
+      <div style="height:160px;overflow:hidden;background:#ebe0d0;position:relative">${thumbInner}${videoBadge}</div>
       <div style="padding:4px 8px 5px;display:flex;flex-direction:column;gap:1px;flex-shrink:0">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:3px">
           <span style="font-size:9px;font-weight:700;color:#1a1511;direction:ltr;text-align:start">${esc(handle || p.metadata?.author_name || '—')}</span>
@@ -874,7 +875,7 @@ export async function openComprehensivePreview(data: ComprehensiveData): Promise
     </div>`;
   }
 
-  const newGrid = `<div style="display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(${hlRows},1fr);gap:6px;flex:1;min-height:0">
+  const newGrid = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
       ${newCardsHtml}
     </div>`;
 
