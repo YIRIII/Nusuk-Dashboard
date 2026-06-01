@@ -229,88 +229,86 @@ export function PostsBulkBar({ selectedIds, onClear, onChanged }: Props) {
               </div>
             </div>
           ) : (
-            <div className="max-w-[95vw] overflow-x-auto rounded-2xl border border-border bg-card/95 px-2 py-2 shadow-2xl backdrop-blur-xl">
-              <div className="flex items-center gap-1 min-w-max">
-                <span className="px-3 text-sm font-medium whitespace-nowrap">
-                  {t('posts.bulk.selected', { n: count })}
-                </span>
-                <span className="h-6 w-px bg-border mx-1 flex-shrink-0" />
-                <Button size="sm" variant="soft" onClick={() => navigate('/reports/weekly?ids=' + selectedIds.join(','))} disabled={busy}>
-                  <FileBarChart className="h-4 w-4 me-2" />
-                  {t('posts.bulk.generate_report')}
-                </Button>
-                <Button size="sm" variant="soft" onClick={markReviewed} disabled={busy}>
-                  <CheckCircle2 className="h-4 w-4 me-2" />
-                  {t('posts.bulk.mark_reviewed')}
-                </Button>
-                <Button size="sm" variant="ghost" onClick={makeCompany} disabled={busy}>
-                  <Building2 className="h-4 w-4 me-2" />
-                  {t('posts.bulk.to_company')}
-                </Button>
-                <Button size="sm" variant="ghost" onClick={makeIndividual} disabled={busy}>
-                  <User className="h-4 w-4 me-2" />
-                  {t('posts.bulk.to_individual')}
-                </Button>
-                <div className="relative" ref={menuRef}>
-                  <Button
-                    size="sm"
-                    variant="soft"
-                    onClick={() => setCategoryMenuOpen((v) => !v)}
-                    disabled={busy}
-                  >
-                    <Tag className="h-4 w-4 me-2" />
-                    {t('posts.bulk.set_category_btn_v2')}
-                    <ChevronUp
-                      className={
-                        'h-3 w-3 ms-1.5 transition-transform ' +
-                        (categoryMenuOpen ? '' : 'rotate-180')
-                      }
-                    />
-                  </Button>
-                  <AnimatePresence>
-                    {categoryMenuOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 6, scale: 0.96 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 4, scale: 0.98 }}
-                        transition={{ duration: 0.14 }}
-                        className="absolute bottom-full mb-2 start-0 flex flex-col gap-1 rounded-xl border border-border bg-card p-1.5 shadow-2xl z-50 min-w-[10rem]"
-                      >
-                        {(['inner', 'outer', 'general', 'other'] as const).map((c) => (
-                          <button
-                            key={c}
-                            onClick={() => {
-                              setCategoryMenuOpen(false);
-                              setCategory(c);
-                            }}
-                            disabled={busy}
-                            className="rounded-md px-3 py-2 text-start text-sm font-medium text-foreground transition-colors hover:bg-accent"
-                          >
-                            {t('posts.category.' + c)}
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-                <Button size="sm" variant="ghost" onClick={recapture} disabled={busy}>
-                  <RotateCw className="h-4 w-4 me-2" />
-                  {t('posts.bulk.recapture')}
-                </Button>
-                <Button size="sm" variant="destructive" onClick={softDelete} disabled={busy}>
-                  <Trash2 className="h-4 w-4 me-2" />
-                  {t('posts.bulk.delete')}
-                </Button>
-                <span className="h-6 w-px bg-border mx-1 flex-shrink-0" />
+            <div className="flex flex-wrap items-center justify-center gap-1 rounded-2xl border border-border bg-card/95 px-2 py-2 shadow-2xl backdrop-blur-xl max-w-[95vw]">
+              <span className="px-3 text-sm font-medium whitespace-nowrap">
+                {t('posts.bulk.selected', { n: count })}
+              </span>
+              <span className="h-6 w-px bg-border mx-1 flex-shrink-0" />
+              <Button size="sm" variant="soft" onClick={() => navigate('/reports/weekly?ids=' + selectedIds.join(','))} disabled={busy}>
+                <FileBarChart className="h-4 w-4 me-2" />
+                {t('posts.bulk.generate_report')}
+              </Button>
+              <Button size="sm" variant="soft" onClick={markReviewed} disabled={busy}>
+                <CheckCircle2 className="h-4 w-4 me-2" />
+                {t('posts.bulk.mark_reviewed')}
+              </Button>
+              <Button size="sm" variant="ghost" onClick={makeCompany} disabled={busy}>
+                <Building2 className="h-4 w-4 me-2" />
+                {t('posts.bulk.to_company')}
+              </Button>
+              <Button size="sm" variant="ghost" onClick={makeIndividual} disabled={busy}>
+                <User className="h-4 w-4 me-2" />
+                {t('posts.bulk.to_individual')}
+              </Button>
+              <div className="relative" ref={menuRef}>
                 <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={onClear}
-                  aria-label={t('common.cancel')}
+                  size="sm"
+                  variant="soft"
+                  onClick={() => setCategoryMenuOpen((v) => !v)}
+                  disabled={busy}
                 >
-                  <X className="h-4 w-4" />
+                  <Tag className="h-4 w-4 me-2" />
+                  {t('posts.bulk.set_category_btn_v2')}
+                  <ChevronUp
+                    className={
+                      'h-3 w-3 ms-1.5 transition-transform ' +
+                      (categoryMenuOpen ? '' : 'rotate-180')
+                    }
+                  />
                 </Button>
+                <AnimatePresence>
+                  {categoryMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 6, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 4, scale: 0.98 }}
+                      transition={{ duration: 0.14 }}
+                      className="absolute bottom-full mb-2 start-0 flex flex-col gap-1 rounded-xl border border-border bg-card p-1.5 shadow-2xl z-50 min-w-[10rem]"
+                    >
+                      {(['inner', 'outer', 'general', 'other'] as const).map((c) => (
+                        <button
+                          key={c}
+                          onClick={() => {
+                            setCategoryMenuOpen(false);
+                            setCategory(c);
+                          }}
+                          disabled={busy}
+                          className="rounded-md px-3 py-2 text-start text-sm font-medium text-foreground transition-colors hover:bg-accent"
+                        >
+                          {t('posts.category.' + c)}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
+              <Button size="sm" variant="ghost" onClick={recapture} disabled={busy}>
+                <RotateCw className="h-4 w-4 me-2" />
+                {t('posts.bulk.recapture')}
+              </Button>
+              <Button size="sm" variant="destructive" onClick={softDelete} disabled={busy}>
+                <Trash2 className="h-4 w-4 me-2" />
+                {t('posts.bulk.delete')}
+              </Button>
+              <span className="h-6 w-px bg-border mx-1 flex-shrink-0" />
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={onClear}
+                aria-label={t('common.cancel')}
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
           )}
         </motion.div>
