@@ -68,6 +68,7 @@
   "reports.comprehensive.pick_hint": "Click posts to feature them in the report highlights. Leave empty for auto-selection.",
   "reports.comprehensive.selected": "selected",
   "reports.comprehensive.clear_selection": "Clear selection",
+  "posts.bulk.generate_report": "Generate Report",
   "reports.comprehensive.download_pdf": "Full Report PDF",
 
   "theme.toggle": "Toggle theme",
