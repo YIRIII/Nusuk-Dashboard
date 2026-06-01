@@ -13,6 +13,7 @@ import {
   Circle,
   CheckSquare,
   Square,
+  Video,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { api, type Post, type Company } from '@/lib/api';
@@ -136,6 +137,12 @@ export function PostCard({
               loading="lazy"
               className="h-full w-full object-cover object-[center_10%] transition-transform duration-300 group-hover:scale-[1.03]"
             />
+            {post.latest_capture?.media === 'video' && (
+              <span className="absolute top-2 end-2 z-10 inline-flex items-center gap-1 rounded-md bg-red-600/85 px-1.5 py-0.5 text-[10px] font-semibold text-white shadow-sm">
+                <Video className="h-3 w-3" />
+                {t('reports.comprehensive.video')}
+              </span>
+            )}
             {/* Bottom fade so the cutoff doesn't look harsh */}
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-card via-card/70 to-transparent" />
           </div>

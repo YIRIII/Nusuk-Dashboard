@@ -2,9 +2,10 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePosts } from '@/hooks/usePosts';
 import type { Post, CompanyCategory } from '@/lib/api';
-import { Download, Printer, Image } from 'lucide-react';
+import { Download, Printer, Image, FileBarChart } from 'lucide-react';
 import { buildWeeklyPptx, type ReportData } from '@/lib/reportPptx';
 import { openPosterPreview, buildPosterPptx, type PosterData } from '@/lib/reportPoster';
+import { buildComprehensiveReport, type ComprehensiveData } from '@/lib/reportComprehensive';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { countHashtags } from '@/lib/hashtags';
@@ -86,7 +87,7 @@ export function ReportWeeklyPage() {
   const isAr = locale === 'ar';
 
   // Pull a wide window so the client can slice into "this week" and "last week".
-  const { data } = usePosts({ sort: 'posted_desc', limit: 500 });
+  const { data } = usePosts({ sort: 'posted_desc', limit: 1000 });
   const allRows = data?.rows ?? [];
 
   const todayMidnight = useMemo(() => {
@@ -105,6 +106,7 @@ export function ReportWeeklyPage() {
   const [endISO, setEndISO] = useState(() => todayMidnight.toISOString().slice(0, 10));
   const [downloading, setDownloading] = useState(false);
   const [posterLoading, setPosterLoading] = useState(false);
+  const [comprehensiveLoading, setComprehensiveLoading] = useState(false);
   const [dateSystem, setDateSystem] = useState<DateSystem>('gregorian');
   const [showLogo, setShowLogo] = useState(true);
 
@@ -294,6 +296,69 @@ export function ReportWeeklyPage() {
     [thisWeek],
   );
 
+  // Comprehensive report aggregations
+  const dailyCounts = useMemo(() => {
+    const sorted = [...perDay.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+    return sorted.map(([date, count]) => ({
+      date,
+      label: fmtWeekday(new Date(date + 'T00:00:00'), locale),
+      count,
+    }));
+  }, [perDay, locale]);
+
+  const originCounts = useMemo(() => {
+    let individual = 0;
+    let company = 0;
+    for (const p of thisWeek) {
+      if (p.origin === 'company') company++;
+      else individual++;
+    }
+    return { individual, company };
+  }, [thisWeek]);
+
+  const mediaBreakdown = useMemo(() => {
+    const m = { video: 0, image: 0, gif: 0, none: 0 };
+    for (const p of thisWeek) {
+      const media = p.latest_capture?.media ?? 'none';
+      m[media]++;
+    }
+    return m;
+  }, [thisWeek]);
+
+  const extendedHighlights = useMemo(() => {
+    const picks: Post[] = [];
+    const seen = new Set<string>();
+    const byHandle = new Map<string, Post[]>();
+    for (const p of thisWeek) {
+      const h = (p.metadata?.author_handle ?? '').toLowerCase();
+      if (!h) continue;
+      const arr = byHandle.get(h) ?? [];
+      arr.push(p);
+      byHandle.set(h, arr);
+    }
+    for (const v of topVoices) {
+      const arr = byHandle.get(v.handle.toLowerCase()) ?? [];
+      const latest = arr.sort(
+        (a, b) => postDate(b).getTime() - postDate(a).getTime(),
+      )[0];
+      if (latest && !seen.has(latest.id)) {
+        picks.push(latest);
+        seen.add(latest.id);
+      }
+    }
+    const sortedAll = [...thisWeek].sort(
+      (a, b) => postDate(b).getTime() - postDate(a).getTime(),
+    );
+    for (const p of sortedAll) {
+      if (picks.length >= 12) break;
+      if (!seen.has(p.id)) {
+        picks.push(p);
+        seen.add(p.id);
+      }
+    }
+    return picks.slice(0, 12);
+  }, [thisWeek, topVoices]);
+
   const datedTitle = useMemo(() => {
     const endInclusive = new Date(end.getTime() - 1);
     const hijriStart = fmtHijri(start);
@@ -393,6 +458,48 @@ export function ReportWeeklyPage() {
       await buildPosterPptx(buildPosterData(buildReportData()), fileName);
     } finally {
       setPosterLoading(false);
+    }
+  }
+
+  function buildComprehensiveData(): ComprehensiveData {
+    const rd = buildReportData();
+    return {
+      ...rd,
+      totalCaptured: data?.total ?? allRows.length,
+      showLogo,
+      dailyCounts,
+      individualCount: originCounts.individual,
+      companyCount: originCounts.company,
+      mediaBreakdown,
+      extendedHighlights,
+      allPosts: thisWeek,
+      comprehensiveLabels: {
+        coverageAnalysis: t('reports.comprehensive.coverage_analysis'),
+        dailyTrend: t('reports.comprehensive.daily_trend'),
+        categoryDistribution: t('reports.comprehensive.category_distribution'),
+        originBreakdown: t('reports.comprehensive.origin_breakdown'),
+        moreCoverage: t('reports.comprehensive.more_coverage'),
+        statistics: t('reports.comprehensive.statistics'),
+        mediaBreakdown: t('reports.comprehensive.media_breakdown'),
+        video: t('reports.comprehensive.video'),
+        individual: t('reports.comprehensive.individual'),
+        company: t('reports.comprehensive.company'),
+        confidential: t('reports.comprehensive.confidential'),
+        viewOriginal: t('reports.comprehensive.view_original'),
+        allCoverage: t('reports.comprehensive.all_coverage'),
+        pageOf: t('reports.comprehensive.page_of'),
+      },
+    };
+  }
+
+  async function handleDownloadComprehensive() {
+    if (comprehensiveLoading) return;
+    setComprehensiveLoading(true);
+    try {
+      const fileName = 'hadaq-report-' + startISO + '-to-' + endISO + '.pptx';
+      await buildComprehensiveReport(buildComprehensiveData(), fileName);
+    } finally {
+      setComprehensiveLoading(false);
     }
   }
 
@@ -502,6 +609,14 @@ export function ReportWeeklyPage() {
           >
             <Download className="h-4 w-4" />
             {posterLoading ? t('reports.weekly.downloading') : t('reports.weekly.download_poster_pptx')}
+          </button>
+          <button
+            onClick={handleDownloadComprehensive}
+            disabled={comprehensiveLoading || thisWeek.length === 0}
+            className="inline-flex h-9 items-center gap-2 rounded-lg bg-amber-700 px-4 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+          >
+            <FileBarChart className="h-4 w-4" />
+            {comprehensiveLoading ? t('reports.weekly.downloading') : t('reports.comprehensive.download')}
           </button>
         </div>
       </div>
