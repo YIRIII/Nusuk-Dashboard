@@ -772,18 +772,14 @@ export async function openComprehensivePreview(data: ComprehensiveData): Promise
   }
   let fullHtml = buildPosterHtml(posterData, screenshotUrls);
 
-  // Fix print CSS: allow multi-page, add margins so content doesn't bleed off edges
+  // Replace entire print CSS block to allow multi-page with proper margins
   fullHtml = fullHtml.replace(
-    '@media print{',
-    '@media print{@page{size:A4 portrait;margin:8mm 10mm}',
-  );
-  fullHtml = fullHtml.replace(
-    'html,body{margin:0!important;padding:0!important;background:#faf6f0!important;width:100%!important;height:100%!important;overflow:hidden!important}',
-    'html,body{margin:0!important;padding:0!important;background:#faf6f0!important}',
-  );
-  fullHtml = fullHtml.replace(
-    '.poster{max-width:100%!important;width:100%!important;height:100%!important;min-height:100%!important;overflow:hidden!important;margin:0!important}',
-    '.poster{max-width:100%!important;width:100%!important;margin:0 auto!important}',
+    /@media print\{[^}]*@page\{[^}]*\}[^}]*html,body\{[^}]*\}[^}]*\.poster\{[^}]*\}\s*\}/,
+    `@media print{
+  @page{size:A4 portrait;margin:8mm 10mm}
+  html,body{margin:0!important;padding:0!important;background:#faf6f0!important}
+  .poster{max-width:100%!important;width:100%!important;margin:0 auto!important}
+}`,
   );
 
   // Charts HTML to inject
