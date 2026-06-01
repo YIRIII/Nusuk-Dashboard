@@ -722,3 +722,351 @@ export async function buildComprehensiveReport(data: ComprehensiveData, fileName
 
   await pptx.writeFile({ fileName });
 }
+
+// ═══════════════════════════════════════════════════════════════════
+//  HTML / PDF comprehensive report
+// ═══════════════════════════════════════════════════════════════════
+
+function esc(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function catColorCss(c: Category): string {
+  return '#' + CAT_HEX[c];
+}
+
+function buildComprehensiveHtml(d: ComprehensiveData): string {
+  const dir = d.isRtl ? 'rtl' : 'ltr';
+  const isHijri = d.dateSystem === 'hijri';
+  const primaryDate = isHijri ? d.hijriLabel : d.startLabel + ' — ' + d.endLabel;
+  const secondaryDate = isHijri ? d.startLabel + ' — ' + d.endLabel : d.hijriLabel;
+
+  const wowStr = d.wow === null ? '—' : (d.wow >= 0 ? '↑' : '↓') + Math.abs(d.wow) + '%';
+  const wowColor = d.wow === null ? '#1a1511' : d.wow >= 0 ? '#038061' : '#d95e4a';
+
+  const kpis = [
+    { v: d.totalCaptured.toString(), l: d.labels.kpiTotalCaptured },
+    { v: d.total.toString(), l: d.labels.kpiTotal },
+    { v: wowStr, l: d.isRtl ? 'مقارنة بالأسبوع الماضي' : d.labels.kpiWow, color: wowColor },
+    { v: d.busiestLabel || '—', l: d.labels.kpiPeak, small: true },
+    { v: d.uniqueHandles.toString(), l: d.labels.kpiUnique },
+  ];
+
+  // ── Category bars ──
+  const activeCategories = d.categoryOrder.filter(c => (d.categoryCounts[c] ?? 0) > 0);
+  const maxCat = Math.max(1, ...activeCategories.map(c => d.categoryCounts[c] ?? 0));
+  let catHtml = '';
+  for (const c of activeCategories) {
+    const n = d.categoryCounts[c] ?? 0;
+    const pct = d.total > 0 ? Math.round((n / d.total) * 100) : 0;
+    const w = Math.round((n / maxCat) * 100);
+    catHtml += `<div class="bar-row">
+      <span class="bar-label">${esc(d.categoryLabels[c])}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${w}%;background:${catColorCss(c)}"></div></div>
+      <span class="bar-val">${n}</span>
+      <span class="bar-pct">${pct}%</span>
+    </div>`;
+  }
+
+  // ── Top voices ──
+  let voicesHtml = '';
+  for (let i = 0; i < Math.min(5, d.topVoices.length); i++) {
+    const v = d.topVoices[i]!;
+    const catBadge = v.category
+      ? `<span class="cat-badge" style="background:${catColorCss(v.category)}">${esc(d.categoryLabels[v.category])}</span>`
+      : '';
+    voicesHtml += `<div class="voice-row">
+      <span class="voice-num">${i + 1}</span>
+      <span class="voice-handle">${esc(v.handle)}</span>
+      ${catBadge}
+      <span class="voice-count">${v.n}</span>
+    </div>`;
+  }
+
+  // ── Top hashtags ──
+  let hashtagsHtml = '';
+  const maxTag = Math.max(1, ...d.topHashtags.map(tc => tc.count));
+  for (let i = 0; i < Math.min(8, d.topHashtags.length); i++) {
+    const tc = d.topHashtags[i]!;
+    const w = Math.round((tc.count / maxTag) * 100);
+    hashtagsHtml += `<div class="bar-row">
+      <span class="voice-num">${i + 1}</span>
+      <span class="bar-label" style="width:80px">${esc(tc.tag)}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${w}%;background:#d7a562"></div></div>
+      <span class="bar-val">${tc.count}</span>
+    </div>`;
+  }
+
+  // ── Highlight cards ──
+  let highlightsHtml = '';
+  for (const p of d.extendedHighlights.slice(0, 12)) {
+    const handle = p.metadata?.author_handle ?? p.metadata?.author_name ?? '—';
+    const text = (p.metadata?.text ?? '').slice(0, 120);
+    const dateLabel = d.datePostedLabel(p);
+    const imgUrl = p.screenshot_url ? toAbsoluteUrl(p.screenshot_url) : null;
+    const cat = p.origin === 'company' ? (p.company_category ?? 'unclassified') as Category : null;
+    const isVideo = p.latest_capture?.media === 'video';
+
+    const imgInner = imgUrl
+      ? `<img src="${esc(imgUrl)}" crossorigin="anonymous" class="card-img"/>`
+      : `<div class="card-img-empty">—</div>`;
+    const catBadge = cat
+      ? `<span class="cat-badge" style="background:${catColorCss(cat)}">${esc(d.categoryLabels[cat])}</span>`
+      : '';
+    const videoBadge = isVideo
+      ? `<span class="video-badge">▶ ${esc(d.comprehensiveLabels.video)}</span>`
+      : '';
+
+    highlightsHtml += `<div class="highlight-card">
+      <div class="card-thumb">${imgInner}${videoBadge}</div>
+      <div class="card-body">
+        <div class="card-header">
+          <span class="card-handle">${esc(handle)}</span>
+          ${catBadge}
+        </div>
+        <span class="card-date">${esc(dateLabel)}</span>
+        <p class="card-text">${esc(text)}</p>
+        <a href="${esc(p.url)}" class="card-link" target="_blank">${esc(d.comprehensiveLabels.viewOriginal)}</a>
+      </div>
+    </div>`;
+  }
+
+  // ── All posts list ──
+  const sorted = [...d.allPosts].sort(
+    (a, b) => new Date(b.posted_at ?? b.captured_at).getTime() - new Date(a.posted_at ?? a.captured_at).getTime(),
+  );
+  let allPostsHtml = '';
+  for (let i = 0; i < sorted.length; i++) {
+    const p = sorted[i]!;
+    const handle = p.metadata?.author_handle ?? p.metadata?.author_name ?? '—';
+    const fullText = p.metadata?.text ?? '—';
+    const dateLabel = d.datePostedLabel(p);
+    const imgUrl = p.screenshot_url ? toAbsoluteUrl(p.screenshot_url) : null;
+    const cat = p.origin === 'company' ? (p.company_category ?? 'unclassified') as Category : null;
+    const isVideo = p.latest_capture?.media === 'video';
+
+    const imgInner = imgUrl
+      ? `<img src="${esc(imgUrl)}" crossorigin="anonymous" class="post-img"/>`
+      : `<div class="post-img-empty">${esc(d.labels.noScreenshot)}</div>`;
+    const catBadge = cat
+      ? `<span class="cat-badge" style="background:${catColorCss(cat)}">${esc(d.categoryLabels[cat])}</span>`
+      : '';
+    const videoBadge = isVideo
+      ? `<span class="video-badge-sm">▶ ${esc(d.comprehensiveLabels.video)}</span>`
+      : '';
+
+    allPostsHtml += `<div class="post-row">
+      <div class="post-num">${i + 1}</div>
+      <div class="post-thumb">${imgInner}${videoBadge}</div>
+      <div class="post-content">
+        <div class="post-header">
+          <span class="post-handle">${esc(handle)}</span>
+          ${catBadge}
+          <span class="post-date">${esc(dateLabel)}</span>
+        </div>
+        <p class="post-text">${esc(fullText)}</p>
+        <a href="${esc(p.url)}" class="card-link" target="_blank">🔗 ${esc(d.comprehensiveLabels.viewOriginal)} — ${esc(p.url)}</a>
+      </div>
+    </div>`;
+  }
+
+  // ── Origin / media stats ──
+  const indPct = d.total > 0 ? Math.round((d.individualCount / d.total) * 100) : 0;
+  const comPct = d.total > 0 ? Math.round((d.companyCount / d.total) * 100) : 0;
+
+  return `<!DOCTYPE html>
+<html lang="${d.isRtl ? 'ar' : 'en'}" dir="${dir}">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>${esc(d.labels.brand)} — ${d.isRtl ? 'التقرير الشامل' : 'Comprehensive Report'}</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{font-family:'Cairo',sans-serif;background:#f5ede3;color:#1a1511;line-height:1.4}
+.page{width:210mm;min-height:297mm;background:#faf6f0;margin:0 auto 8px;padding:14mm 16mm;position:relative}
+@media print{
+  @page{size:A4 portrait;margin:0}
+  html,body{margin:0!important;padding:0!important;background:#faf6f0!important}
+  .page{width:100%!important;min-height:auto!important;margin:0!important;padding:12mm 14mm!important;page-break-after:always}
+  .page:last-child{page-break-after:avoid}
+  .no-print{display:none!important}
+}
+
+/* ── Typography ── */
+h1{font-size:20px;font-weight:800;color:#1a1511;margin:0}
+h2{font-size:16px;font-weight:700;color:#174766;margin:16px 0 8px;display:flex;align-items:center;gap:6px}
+h2::before{content:'';width:14px;height:2px;background:#d7a562;border-radius:1px;flex-shrink:0}
+h3{font-size:12px;font-weight:700;color:#174766;margin:10px 0 6px}
+.subtitle{font-size:10px;color:#8a7e72;margin-top:2px}
+.gold{color:#d7a562}
+.divider{height:1px;background:linear-gradient(90deg,transparent,#d7a562,transparent);opacity:0.4;margin:10px 0}
+
+/* ── Header ── */
+.header{display:flex;align-items:start;justify-content:space-between;gap:12px;margin-bottom:6px}
+.date-card{background:rgba(255,255,255,0.5);border:0.5px solid rgba(215,165,98,0.1);border-radius:8px;padding:6px 14px;text-align:start}
+.date-primary{font-size:13px;font-weight:700;color:#1a1511}
+.date-secondary{font-size:10px;color:#8a7e72}
+
+/* ── KPI tiles ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:10px 0}
+.kpi{background:rgba(255,255,255,0.5);border:0.5px solid rgba(215,165,98,0.06);border-radius:8px;padding:8px 6px;text-align:center}
+.kpi-val{font-size:20px;font-weight:700;line-height:1}
+.kpi-label{font-size:8px;font-weight:600;color:#8a7e72;margin-top:4px}
+
+/* ── Panels ── */
+.panels{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:8px 0}
+.panel{background:rgba(255,255,255,0.45);border:0.5px solid rgba(215,165,98,0.06);border-radius:8px;padding:8px 10px}
+.panel-title{font-size:10px;font-weight:700;color:#174766;margin-bottom:6px;padding-bottom:4px;border-bottom:0.5px solid rgba(215,165,98,0.1);display:flex;align-items:center;gap:4px}
+.panel-title::before{content:'';width:4px;height:4px;border-radius:50%;background:#d7a562;flex-shrink:0}
+
+/* ── Bar rows ── */
+.bar-row{display:flex;align-items:center;gap:4px;margin-bottom:3px}
+.bar-label{width:55px;font-size:9px;font-weight:600;color:#8a7e72;flex-shrink:0}
+.bar-track{flex:1;height:6px;border-radius:3px;background:#ebe0d0;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px}
+.bar-val{width:20px;font-size:10px;font-weight:700;color:#1a1511;text-align:end;flex-shrink:0}
+.bar-pct{width:24px;font-size:8px;color:#8a7e72;text-align:end;flex-shrink:0}
+
+/* ── Voice rows ── */
+.voice-row{display:flex;align-items:center;gap:5px;margin-bottom:3px}
+.voice-num{width:16px;height:16px;border-radius:50%;background:rgba(215,165,98,0.1);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#d7a562;flex-shrink:0}
+.voice-handle{flex:1;font-size:10px;font-weight:600;color:#1a1511;direction:ltr;text-align:start;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.voice-count{font-size:11px;font-weight:700;color:#1a1511;flex-shrink:0}
+
+/* ── Category badge ── */
+.cat-badge{font-size:7px;font-weight:700;padding:1px 6px;border-radius:3px;color:#fff;flex-shrink:0}
+
+/* ── Video badge ── */
+.video-badge{position:absolute;top:4px;${d.isRtl ? 'left' : 'right'}:4px;font-size:7px;font-weight:700;padding:1px 6px;border-radius:3px;background:#c0392b;color:#fff}
+.video-badge-sm{position:absolute;bottom:4px;${d.isRtl ? 'left' : 'right'}:4px;font-size:7px;font-weight:700;padding:1px 5px;border-radius:3px;background:#c0392b;color:#fff}
+
+/* ── Origin stats ── */
+.stats-row{display:flex;gap:12px;margin:8px 0}
+.stat-item{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600;color:#1a1511}
+.stat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* ── Highlight cards (grid) ── */
+.highlights-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.highlight-card{background:rgba(255,255,255,0.5);border:0.5px solid rgba(215,165,98,0.06);border-radius:8px;overflow:hidden;break-inside:avoid}
+.card-thumb{position:relative;height:90px;background:#ebe0d0;overflow:hidden}
+.card-img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block}
+.card-img-empty{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:14px;opacity:0.15}
+.card-body{padding:5px 8px 6px;display:flex;flex-direction:column;gap:1px}
+.card-header{display:flex;align-items:center;justify-content:space-between;gap:3px}
+.card-handle{font-size:9px;font-weight:700;color:#1a1511;direction:ltr;text-align:start;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.card-date{font-size:8px;color:#8a7e72}
+.card-text{font-size:8px;line-height:1.3;color:#1a1511;opacity:0.6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;margin:1px 0 0}
+.card-link{font-size:7px;font-weight:700;color:#174766;text-decoration:none;margin-top:2px}
+.card-link:hover{text-decoration:underline}
+
+/* ── All posts list ── */
+.post-row{display:flex;gap:10px;padding:8px 0;border-bottom:0.5px solid rgba(215,165,98,0.1);break-inside:avoid;page-break-inside:avoid}
+.post-num{width:24px;height:24px;border-radius:6px;background:#d7a562;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.post-thumb{width:130px;height:90px;border-radius:6px;overflow:hidden;flex-shrink:0;background:#ebe0d0;position:relative}
+.post-img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block}
+.post-img-empty{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:8px;color:#8a7e72}
+.post-content{flex:1;min-width:0}
+.post-header{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px}
+.post-handle{font-size:11px;font-weight:700;color:#1a1511;direction:ltr}
+.post-date{font-size:9px;color:#8a7e72;margin-inline-start:auto}
+.post-text{font-size:9px;line-height:1.4;color:#1a1511;margin:3px 0}
+.footer{text-align:center;font-size:8px;color:#8a7e72;margin-top:auto;padding-top:8px}
+</style>
+</head>
+<body>
+
+<!-- ═══ PAGE 1: Executive Summary ═══ -->
+<div class="page">
+  <div class="header">
+    <div>
+      <div class="gold" style="font-size:14px;font-weight:800;letter-spacing:1px">${d.isRtl ? 'التفاعل الإعلامي لبطاقة نسك' : 'Nusuk Card Media Coverage'}</div>
+      <h1>${esc(d.labels.execSummaryDated)}</h1>
+      <div class="subtitle">${d.isRtl ? 'بطاقة نسك - مسار التوعية و التدريب' : 'Nusuk Card — Awareness & Training Track'}</div>
+    </div>
+    <div class="date-card">
+      <div style="font-size:7px;color:#8a7e72;font-weight:600;letter-spacing:1px;text-transform:uppercase">${esc(d.labels.period)}</div>
+      <div class="date-primary">${esc(primaryDate)}</div>
+      <div class="date-secondary">${esc(secondaryDate)}</div>
+    </div>
+  </div>
+  <div class="divider"></div>
+
+  <div class="kpi-grid">
+    ${kpis.map(k => `<div class="kpi">
+      <div class="kpi-val" style="color:${k.color || '#1a1511'};${k.small ? 'font-size:14px' : ''}">${esc(k.v)}</div>
+      <div class="kpi-label">${esc(k.l)}</div>
+    </div>`).join('')}
+  </div>
+
+  <div class="panels">
+    <div class="panel">
+      <div class="panel-title">${esc(d.labels.categories)}</div>
+      ${catHtml}
+    </div>
+    <div class="panel">
+      <div class="panel-title">${esc(d.labels.topVoices)}</div>
+      ${voicesHtml}
+    </div>
+    <div class="panel">
+      <div class="panel-title">${esc(d.labels.topHashtags)}</div>
+      ${hashtagsHtml}
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-item"><span class="stat-dot" style="background:#70A3C2"></span>${esc(d.comprehensiveLabels.individual)}: ${d.individualCount} (${indPct}%)</div>
+    <div class="stat-item"><span class="stat-dot" style="background:#d7a562"></span>${esc(d.comprehensiveLabels.company)}: ${d.companyCount} (${comPct}%)</div>
+    ${d.mediaBreakdown.video > 0 ? `<div class="stat-item"><span class="stat-dot" style="background:#c0392b"></span>${esc(d.comprehensiveLabels.video)}: ${d.mediaBreakdown.video}</div>` : ''}
+  </div>
+
+  <div class="divider"></div>
+  <div style="background:rgba(255,255,255,0.4);border-radius:6px;padding:8px 10px;margin:4px 0">
+    <div style="font-size:9px;font-weight:700;color:#d7a562;margin-bottom:2px">${esc(d.labels.headline)}</div>
+    <div style="font-size:10px;color:#1a1511">${esc(d.headline)}</div>
+  </div>
+
+  ${d.extendedHighlights.length > 0 ? `
+  <h2>${esc(d.labels.highlights)}</h2>
+  <div class="highlights-grid">${highlightsHtml}</div>
+  ` : ''}
+
+  <div class="footer">${esc(d.comprehensiveLabels.confidential)}</div>
+</div>
+
+<!-- ═══ PAGES 2+: All Posts ═══ -->
+<div class="page">
+  <h2>${esc(d.comprehensiveLabels.allCoverage)}</h2>
+  <div class="subtitle" style="margin-bottom:8px">${sorted.length} ${d.isRtl ? 'منشور' : 'posts'} · ${esc(primaryDate)}</div>
+  <div class="divider"></div>
+  ${allPostsHtml}
+  <div class="footer">${esc(d.comprehensiveLabels.confidential)}</div>
+</div>
+
+</body>
+</html>`;
+}
+
+export async function openComprehensivePreview(data: ComprehensiveData): Promise<void> {
+  const html = buildComprehensiveHtml(data);
+  const win = window.open('', '_blank');
+  if (!win) return;
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+
+  const imgs = win.document.querySelectorAll('img');
+  if (imgs.length > 0) {
+    const loaded = Array.from(imgs).map(
+      (img) =>
+        new Promise<void>((resolve) => {
+          if (img.complete) return resolve();
+          img.onload = () => resolve();
+          img.onerror = () => resolve();
+        }),
+    );
+    await Promise.all(loaded);
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  win.print();
+}

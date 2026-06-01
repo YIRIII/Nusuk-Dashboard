@@ -5,7 +5,7 @@ import type { Post, CompanyCategory } from '@/lib/api';
 import { Download, Printer, Image, FileBarChart, ChevronDown, ChevronUp, Star, X } from 'lucide-react';
 import { buildWeeklyPptx, type ReportData } from '@/lib/reportPptx';
 import { openPosterPreview, buildPosterPptx, type PosterData } from '@/lib/reportPoster';
-import { buildComprehensiveReport, type ComprehensiveData } from '@/lib/reportComprehensive';
+import { buildComprehensiveReport, openComprehensivePreview, type ComprehensiveData } from '@/lib/reportComprehensive';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { countHashtags } from '@/lib/hashtags';
@@ -520,6 +520,16 @@ export function ReportWeeklyPage() {
     }
   }
 
+  async function handleComprehensivePdf() {
+    if (comprehensiveLoading) return;
+    setComprehensiveLoading(true);
+    try {
+      await openComprehensivePreview(buildComprehensiveData());
+    } finally {
+      setComprehensiveLoading(false);
+    }
+  }
+
   // --- Rendering helpers ---
   interface KpiTileProps {
     value: string;
@@ -634,6 +644,14 @@ export function ReportWeeklyPage() {
           >
             <FileBarChart className="h-4 w-4" />
             {comprehensiveLoading ? t('reports.weekly.downloading') : t('reports.comprehensive.download')}
+          </button>
+          <button
+            onClick={handleComprehensivePdf}
+            disabled={comprehensiveLoading || thisWeek.length === 0}
+            className="inline-flex h-9 items-center gap-2 rounded-lg bg-amber-700/80 px-4 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+          >
+            <Printer className="h-4 w-4" />
+            {comprehensiveLoading ? t('reports.weekly.downloading') : t('reports.comprehensive.download_pdf')}
           </button>
         </div>
       </div>
