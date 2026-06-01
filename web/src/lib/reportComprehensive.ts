@@ -844,14 +844,14 @@ function buildComprehensiveHtml(d: ComprehensiveData): string {
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap');
 *{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 body{font-family:'Cairo',sans-serif;background:#f5ede3;color:#1a1511;line-height:1.4}
-.page{width:210mm;background:#faf6f0;margin:0 auto 8px;padding:14mm 16mm}
+.report{width:100%;max-width:595px;background:#faf6f0;margin:0 auto;padding:16px 20px}
 @media print{
-  @page{size:A4 portrait;margin:0}
+  @page{size:A4 portrait;margin:8mm 10mm}
   html,body{margin:0!important;padding:0!important;background:#faf6f0!important}
-  .page{width:100%!important;margin:0!important;padding:12mm 14mm!important;page-break-after:always}
-  .page:last-child{page-break-after:avoid}
+  .report{max-width:100%!important;padding:0!important}
   .no-print{display:none!important}
 }
+.page-break{page-break-before:always}
 
 h1{font-size:20px;font-weight:800;color:#1a1511;margin:0}
 h2{font-size:16px;font-weight:700;color:#174766;margin:16px 0 8px;display:flex;align-items:center;gap:6px}
@@ -901,8 +901,8 @@ h2::before{content:'';width:14px;height:2px;background:#d7a562;border-radius:1px
 </head>
 <body>
 
-<!-- ═══ PAGE 1: Executive Summary ═══ -->
-<div class="page">
+<div class="report">
+  <!-- ═══ Executive Summary ═══ -->
   <div class="header">
     <div>
       <div class="gold" style="font-size:14px;font-weight:800;letter-spacing:1px">${d.isRtl ? 'التفاعل الإعلامي لبطاقة نسك' : 'Nusuk Card Media Coverage'}</div>
@@ -943,10 +943,8 @@ h2::before{content:'';width:14px;height:2px;background:#d7a562;border-radius:1px
       ${hashtagsHtml}
     </div>
   </div>
-</div>
 
-<!-- ═══ PAGE 2: Charts & Analysis ═══ -->
-<div class="page">
+  <!-- ═══ Charts & Analysis ═══ -->
   <h2>${esc(d.comprehensiveLabels.coverageAnalysis)}</h2>
   <div class="divider"></div>
 
@@ -977,20 +975,9 @@ h2::before{content:'';width:14px;height:2px;background:#d7a562;border-radius:1px
     ].filter(s => s.value > 0), 100)}
   </div>` : ''}
 
-  <div class="panels" style="margin-top:10px">
-    <div class="panel" style="grid-column:span 2">
-      <div class="panel-title">${esc(d.labels.topHashtags)}</div>
-      ${hashtagsHtml}
-    </div>
-    <div class="panel">
-      <div class="panel-title">${esc(d.labels.topVoices)}</div>
-      ${voicesHtml}
-    </div>
-  </div>
-</div>
-
-<!-- ═══ PAGE 3: Highlights ═══ -->
-${highlightPosts.length > 0 ? `<div class="page">
+  <!-- ═══ Highlights ═══ -->
+  ${highlightPosts.length > 0 ? `
+  <div class="page-break"></div>
   <h2>${esc(d.labels.highlights)}</h2>
   <div class="subtitle" style="margin-bottom:8px">${highlightPosts.length} ${d.isRtl ? 'منشور مميز' : 'featured posts'}${d.hasManualSelection ? ` (${d.allPosts.length} ${d.isRtl ? 'إجمالي في الفترة' : 'total in period'})` : ''} · ${esc(primaryDate)}</div>
   <div class="divider"></div>
@@ -1016,7 +1003,8 @@ ${highlightPosts.length > 0 ? `<div class="page">
       </div>`;
     }).join('')}
   </div>
-</div>` : ''}
+  ` : ''}
+</div>
 
 </body>
 </html>`;
