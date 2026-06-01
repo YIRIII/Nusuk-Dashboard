@@ -772,14 +772,17 @@ export async function openComprehensivePreview(data: ComprehensiveData): Promise
   }
   let fullHtml = buildPosterHtml(posterData, screenshotUrls);
 
-  // Replace entire print CSS block to allow multi-page with proper margins
+  // Inject override styles AFTER the poster's </style> to allow multi-page printing
   fullHtml = fullHtml.replace(
-    /@media print\{[^}]*@page\{[^}]*\}[^}]*html,body\{[^}]*\}[^}]*\.poster\{[^}]*\}\s*\}/,
-    `@media print{
-  @page{size:A4 portrait;margin:8mm 10mm}
-  html,body{margin:0!important;padding:0!important;background:#faf6f0!important}
-  .poster{max-width:100%!important;width:100%!important;margin:0 auto!important}
-}`,
+    '</style>',
+    `</style>
+<style>
+@media print{
+  @page{size:A4 portrait;margin:8mm 12mm}
+  html,body{height:auto!important;overflow:visible!important}
+  .poster{height:auto!important;min-height:auto!important;overflow:visible!important}
+}
+</style>`,
   );
 
   // Charts HTML to inject
