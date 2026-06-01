@@ -11,6 +11,7 @@ export interface ComprehensiveData extends ReportData {
   mediaBreakdown: { video: number; image: number; gif: number; none: number };
   extendedHighlights: Post[];
   allPosts: Post[];
+  hasManualSelection: boolean;
   comprehensiveLabels: {
     coverageAnalysis: string;
     dailyTrend: string;
@@ -687,8 +688,10 @@ export async function buildComprehensiveReport(data: ComprehensiveData, fileName
 
   addStatisticsSlide(pptx, data);
 
-  // Every single post, 2 per slide
-  const sorted = [...data.allPosts].sort(
+  // Detail slides: if user selected specific posts, show only those;
+  // otherwise show all posts in the date range.
+  const detailPosts = data.hasManualSelection ? data.extendedHighlights : data.allPosts;
+  const sorted = [...detailPosts].sort(
     (a, b) => new Date(b.posted_at ?? b.captured_at).getTime() - new Date(a.posted_at ?? a.captured_at).getTime(),
   );
   if (sorted.length > 0) {
@@ -806,8 +809,9 @@ function buildComprehensiveHtml(d: ComprehensiveData): string {
     </div>`;
   }
 
-  // ── All posts list ──
-  const sorted = [...d.allPosts].sort(
+  // ── Posts to show in detail: selected only, or all ──
+  const detailSource = d.hasManualSelection ? d.extendedHighlights : d.allPosts;
+  const sorted = [...detailSource].sort(
     (a, b) => new Date(b.posted_at ?? b.captured_at).getTime() - new Date(a.posted_at ?? a.captured_at).getTime(),
   );
   let allPostsHtml = '';
@@ -1057,7 +1061,7 @@ h2::before{content:'';width:14px;height:2px;background:#d7a562;border-radius:1px
 <!-- ═══ PAGES 3+: All Posts ═══ -->
 <div class="page">
   <h2>${esc(d.comprehensiveLabels.allCoverage)}</h2>
-  <div class="subtitle" style="margin-bottom:8px">${sorted.length} ${d.isRtl ? 'منشور' : 'posts'} · ${esc(primaryDate)}</div>
+  <div class="subtitle" style="margin-bottom:8px">${sorted.length} ${d.isRtl ? 'منشور مختار' : 'featured posts'}${d.hasManualSelection ? ` (${d.allPosts.length} ${d.isRtl ? 'إجمالي في الفترة' : 'total in period'})` : ''} · ${esc(primaryDate)}</div>
   <div class="divider"></div>
   ${allPostsHtml}
 </div>

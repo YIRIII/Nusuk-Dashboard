@@ -504,6 +504,7 @@ export function ReportWeeklyPage() {
       mediaBreakdown,
       extendedHighlights: pickedHighlights,
       allPosts: thisWeek,
+      hasManualSelection: selectedIds.size > 0,
       comprehensiveLabels: {
         coverageAnalysis: t('reports.comprehensive.coverage_analysis'),
         dailyTrend: t('reports.comprehensive.daily_trend'),
