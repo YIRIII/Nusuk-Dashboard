@@ -835,40 +835,48 @@ export async function openComprehensivePreview(data: ComprehensiveData): Promise
 <title>${esc(data.labels.brand)} — ${data.isRtl ? 'التقرير الشامل' : 'Comprehensive Report'}</title>
 <style>
 ${posterStyles}
-.page-break{page-break-before:always}
-.charts-section{padding:12px 20px}
-.chart-panel{background:rgba(255,255,255,0.45);border:0.5px solid rgba(215,165,98,0.06);border-radius:8px;padding:8px 10px;margin-bottom:8px}
+.a4-page{width:595px;height:842px;background:#faf6f0;margin:0 auto 8px;overflow:hidden;display:flex;flex-direction:column}
+@media print{
+  @page{size:A4 portrait;margin:0}
+  html,body{margin:0!important;padding:0!important;background:#faf6f0!important}
+  .a4-page{width:100%!important;height:100vh!important;margin:0!important;page-break-after:always;page-break-inside:avoid}
+  .a4-page:last-child{page-break-after:avoid}
+  .poster{max-width:100%!important;width:100%!important;height:100vh!important;min-height:100vh!important;margin:0!important}
+}
+.chart-panel{background:rgba(255,255,255,0.45);border:0.5px solid rgba(215,165,98,0.06);border-radius:8px;padding:8px 10px;margin-bottom:6px}
 .chart-title{font-size:10px;font-weight:700;color:#174766;margin-bottom:6px;padding-bottom:4px;border-bottom:0.5px solid rgba(215,165,98,0.1);display:flex;align-items:center;gap:4px}
 .chart-title::before{content:'';width:4px;height:4px;border-radius:50%;background:#d7a562;flex-shrink:0}
-.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
-.section-title{font-size:14px;font-weight:700;color:#174766;margin:10px 0 6px;display:flex;align-items:center;gap:6px}
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px}
+.section-title{font-size:14px;font-weight:700;color:#174766;margin:8px 0 4px;display:flex;align-items:center;gap:6px}
 .section-title::before{content:'';width:14px;height:2px;background:#d7a562;border-radius:1px;flex-shrink:0}
-.gold-divider{height:0.5px;background:linear-gradient(90deg,transparent,#d7a562,transparent);opacity:0.4;margin:8px 0}
+.gold-divider{height:0.5px;background:linear-gradient(90deg,transparent,#d7a562,transparent);opacity:0.4;margin:6px 0}
 </style>
 </head>
 <body>
+
+<!-- PAGE 1: Poster (exact copy) -->
 ${posterBody}
 
-<div class="page-break"></div>
-<div class="poster" style="padding-top:12px">
-  <div class="charts-section">
+<!-- PAGE 2: Charts & Analysis -->
+<div class="a4-page">
+  <div style="padding:14px 20px;flex:1">
     <div class="section-title">${esc(data.comprehensiveLabels.coverageAnalysis)}</div>
     <div class="gold-divider"></div>
 
     <div class="charts-row">
       <div class="chart-panel">
         <div class="chart-title">${esc(data.comprehensiveLabels.categoryDistribution)}</div>
-        ${svgDoughnut(catChartSegments, 120)}
+        ${svgDoughnut(catChartSegments, 110)}
       </div>
       <div class="chart-panel">
         <div class="chart-title">${esc(data.comprehensiveLabels.originBreakdown)}</div>
-        ${svgDoughnut(originChartSegments, 120)}
+        ${svgDoughnut(originChartSegments, 110)}
       </div>
     </div>
 
     <div class="chart-panel">
       <div class="chart-title">${esc(data.comprehensiveLabels.dailyTrend)}</div>
-      ${svgBarChart(dailyBars, 500, 140)}
+      ${svgBarChart(dailyBars, 520, 130)}
     </div>
 
     ${data.mediaBreakdown.video > 0 || data.mediaBreakdown.gif > 0 ? `
@@ -879,23 +887,23 @@ ${posterBody}
         { value: data.mediaBreakdown.video, color: '#c0392b', label: data.comprehensiveLabels.video },
         ...(data.mediaBreakdown.gif > 0 ? [{ value: data.mediaBreakdown.gif, color: '#d7a562', label: 'GIF' }] : []),
         ...(data.mediaBreakdown.none > 0 ? [{ value: data.mediaBreakdown.none, color: '#8a7e72', label: data.isRtl ? 'نص فقط' : 'Text only' }] : []),
-      ].filter(s => s.value > 0), 100)}
+      ].filter(s => s.value > 0), 90)}
     </div>` : ''}
   </div>
 </div>
 
+<!-- PAGE 3: Highlights -->
 ${hlPosts.length > 0 ? `
-<div class="page-break"></div>
-<div class="poster" style="padding-top:12px">
-  <div style="padding:6px 18px 10px;display:flex;flex-direction:column;min-height:0">
-    <div style="margin-bottom:4px">
+<div class="a4-page">
+  <div style="padding:14px 18px;flex:1;display:flex;flex-direction:column">
+    <div style="margin-bottom:6px">
       <div style="display:flex;align-items:center;justify-content:space-between">
         <h3 style="font-size:12px;font-weight:700;color:#174766;display:flex;align-items:center;gap:6px;margin:0"><span style="width:16px;height:1.5px;background:#d7a562;border-radius:1px"></span>${esc(data.labels.highlights)}</h3>
         <span style="font-size:9px;color:#8a7e72">${hlPosts.length} ${data.isRtl ? 'منشورات' : 'posts'}${data.hasManualSelection ? ` (${data.allPosts.length} ${data.isRtl ? 'إجمالي' : 'total'})` : ''}</span>
       </div>
       <p style="font-size:8px;color:#8a7e72;margin:2px 0 0 22px">${esc(data.labels.highlightsDesc)}</p>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:minmax(180px,220px);gap:6px">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:6px;flex:1">
       ${hlCardsHtml}
     </div>
   </div>
