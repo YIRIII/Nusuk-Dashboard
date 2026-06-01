@@ -793,8 +793,6 @@ export async function openComprehensivePreview(data: ComprehensiveData): Promise
   const hlPosts = [...data.extendedHighlights]
     .sort((a, b) => new Date(b.posted_at ?? b.captured_at).getTime() - new Date(a.posted_at ?? a.captured_at).getTime())
     .slice(0, data.highlightCount);
-  const hlRows = Math.ceil(hlPosts.length / 3);
-
   let hlCardsHtml = '';
   for (const p of hlPosts) {
     const handle = p.metadata?.author_handle ?? '';
@@ -815,7 +813,7 @@ export async function openComprehensivePreview(data: ComprehensiveData): Promise
       : '';
 
     hlCardsHtml += `<div style="background:rgba(255,255,255,0.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:8px;overflow:hidden;border:0.5px solid rgba(215,165,98,0.06);display:flex;flex-direction:column;height:100%;min-height:0">
-      <div style="flex:1;min-height:0;overflow:hidden;background:#ebe0d0;position:relative">${thumbInner}${videoBadge}</div>
+      <div style="height:120px;overflow:hidden;background:#ebe0d0;position:relative">${thumbInner}${videoBadge}</div>
       <div style="padding:4px 8px 5px;display:flex;flex-direction:column;gap:1px;flex-shrink:0">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:3px">
           <span style="font-size:9px;font-weight:700;color:#1a1511;direction:ltr;text-align:start">${esc(handle || p.metadata?.author_name || '—')}</span>
@@ -897,7 +895,7 @@ ${hlPosts.length > 0 ? `
       </div>
       <p style="font-size:8px;color:#8a7e72;margin:2px 0 0 22px">${esc(data.labels.highlightsDesc)}</p>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(${hlRows},1fr);gap:6px;flex:1;min-height:0">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:minmax(180px,220px);gap:6px">
       ${hlCardsHtml}
     </div>
   </div>
