@@ -15,6 +15,7 @@ type KindFilter = 'all' | 'tweet' | 'article';
 type ReviewFilter = 'all' | 'reviewed' | 'unreviewed';
 type OriginFilter = 'all' | 'individual' | 'company';
 type CategoryFilter = 'all' | 'inner' | 'outer' | 'general' | 'other' | 'unclassified';
+type MediaFilter = 'all' | 'video' | 'image' | 'gif';
 type DateFilter = 'all' | '24h' | '7d' | '30d';
 type SortMode = 'posted_desc' | 'posted_asc' | 'captured_desc';
 
@@ -38,6 +39,9 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
   const handleFilter = params.get('handle') ?? '';
   const [category, setCategory] = useState<CategoryFilter>(
     (params.get('category') as CategoryFilter) ?? 'all',
+  );
+  const [mediaFilter, setMediaFilter] = useState<MediaFilter>(
+    (params.get('media') as MediaFilter) ?? 'all',
   );
   const [dateRange, setDateRange] = useState<DateFilter>(
     (params.get('date_range') as DateFilter) ?? 'all',
@@ -67,7 +71,7 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
   );
 
   // Reset when filters change.
-  const filterKey = `${kind}-${review}-${origin}-${company}-${category}-${dateRange}-${sort}-${q}`;
+  const filterKey = `${kind}-${review}-${origin}-${company}-${category}-${mediaFilter}-${dateRange}-${sort}-${q}`;
   const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
   if (filterKey !== prevFilterKey) {
     setPrevFilterKey(filterKey);
@@ -115,8 +119,11 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
         return tags.some((t) => t.toLowerCase() === selectedTag.toLowerCase());
       });
     }
+    if (mediaFilter !== 'all') {
+      filtered = filtered.filter((p) => p.latest_capture?.media === mediaFilter);
+    }
     return filtered;
-  }, [allPosts, selectedTag, handleFilter]);
+  }, [allPosts, selectedTag, handleFilter, mediaFilter]);
 
   const total = data?.total ?? 0;
   const unreviewedCount = posts.filter((p) => !p.reviewed).length;
@@ -267,6 +274,21 @@ export function PostsPage({ isAdmin = false }: { isAdmin?: boolean }) {
                 </button>
               ),
             )}
+          </FilterGroup>
+
+          <FilterGroup label={t('posts.filter_label.media')}>
+            {(['all', 'video', 'image', 'gif'] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => {
+                  setMediaFilter(f);
+                  updateParam('media', f, 'all');
+                }}
+                className={CHIP(mediaFilter === f)}
+              >
+                {t('posts.media_filter.' + f)}
+              </button>
+            ))}
           </FilterGroup>
 
           {topTags.length > 0 && (
