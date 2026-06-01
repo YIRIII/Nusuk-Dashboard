@@ -189,7 +189,7 @@ export function PostsBulkBar({ selectedIds, onClear, onChanged }: Props) {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 80, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 360, damping: 32 }}
-          className="fixed inset-x-0 bottom-10 z-40 flex justify-center px-4"
+          className="fixed inset-x-0 bottom-10 z-[999] flex justify-center px-4"
         >
           {showingProgress ? (
             <div className="w-full max-w-xl rounded-2xl border border-border bg-card/95 p-4 shadow-2xl backdrop-blur-xl">
