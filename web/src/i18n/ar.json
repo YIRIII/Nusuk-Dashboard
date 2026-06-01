@@ -64,6 +64,10 @@
   "reports.comprehensive.view_original": "عرض المنشور الأصلي ↗",
   "reports.comprehensive.all_coverage": "جميع التغطيات الإعلامية",
   "reports.comprehensive.page_of": "صفحة {{page}} من {{total}}",
+  "reports.comprehensive.pick_highlights": "اختيار المنشورات المميزة",
+  "reports.comprehensive.pick_hint": "اضغط على المنشورات لتمييزها في أبرز التغطيات. اتركها فارغة للاختيار التلقائي.",
+  "reports.comprehensive.selected": "مختار",
+  "reports.comprehensive.clear_selection": "مسح الاختيار",
 
   "theme.toggle": "تبديل السمة",
   "theme.light": "الوضع الفاتح",

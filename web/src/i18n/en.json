@@ -64,6 +64,10 @@
   "reports.comprehensive.view_original": "View original ↗",
   "reports.comprehensive.all_coverage": "All Media Coverage",
   "reports.comprehensive.page_of": "Page {{page}} of {{total}}",
+  "reports.comprehensive.pick_highlights": "Select Featured Posts",
+  "reports.comprehensive.pick_hint": "Click posts to feature them in the report highlights. Leave empty for auto-selection.",
+  "reports.comprehensive.selected": "selected",
+  "reports.comprehensive.clear_selection": "Clear selection",
 
   "theme.toggle": "Toggle theme",
   "theme.light": "Light mode",

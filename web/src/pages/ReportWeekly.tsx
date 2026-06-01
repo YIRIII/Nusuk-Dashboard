@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePosts } from '@/hooks/usePosts';
 import type { Post, CompanyCategory } from '@/lib/api';
-import { Download, Printer, Image, FileBarChart } from 'lucide-react';
+import { Download, Printer, Image, FileBarChart, ChevronDown, ChevronUp, Star, X } from 'lucide-react';
 import { buildWeeklyPptx, type ReportData } from '@/lib/reportPptx';
 import { openPosterPreview, buildPosterPptx, type PosterData } from '@/lib/reportPoster';
 import { buildComprehensiveReport, type ComprehensiveData } from '@/lib/reportComprehensive';
@@ -109,6 +109,19 @@ export function ReportWeeklyPage() {
   const [comprehensiveLoading, setComprehensiveLoading] = useState(false);
   const [dateSystem, setDateSystem] = useState<DateSystem>('gregorian');
   const [showLogo, setShowLogo] = useState(true);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
 
   const start = useMemo(() => new Date(startISO + 'T00:00:00'), [startISO]);
   const end = useMemo(() => {
@@ -463,6 +476,10 @@ export function ReportWeeklyPage() {
 
   function buildComprehensiveData(): ComprehensiveData {
     const rd = buildReportData();
+    // Use manually selected posts as highlights if any are selected
+    const pickedHighlights = selectedIds.size > 0
+      ? thisWeek.filter(p => selectedIds.has(p.id))
+      : extendedHighlights;
     return {
       ...rd,
       totalCaptured: data?.total ?? allRows.length,
@@ -471,7 +488,7 @@ export function ReportWeeklyPage() {
       individualCount: originCounts.individual,
       companyCount: originCounts.company,
       mediaBreakdown,
-      extendedHighlights,
+      extendedHighlights: pickedHighlights,
       allPosts: thisWeek,
       comprehensiveLabels: {
         coverageAnalysis: t('reports.comprehensive.coverage_analysis'),
@@ -619,6 +636,90 @@ export function ReportWeeklyPage() {
             {comprehensiveLoading ? t('reports.weekly.downloading') : t('reports.comprehensive.download')}
           </button>
         </div>
+      </div>
+
+      {/* ───── Highlight Picker ───── */}
+      <div className="rounded-2xl border border-border bg-card print:hidden">
+        <button
+          onClick={() => setPickerOpen(!pickerOpen)}
+          className="flex w-full items-center justify-between p-4"
+        >
+          <div className="flex items-center gap-2">
+            <Star className="h-4 w-4 text-amber-500" />
+            <span className="text-sm font-semibold">
+              {t('reports.comprehensive.pick_highlights')}
+            </span>
+            {selectedIds.size > 0 && (
+              <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                {selectedIds.size} {t('reports.comprehensive.selected')}
+              </span>
+            )}
+          </div>
+          {pickerOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+        </button>
+
+        {pickerOpen && (
+          <div className="border-t border-border px-4 pb-4">
+            <div className="flex items-center justify-between py-2">
+              <p className="text-xs text-muted-foreground">
+                {t('reports.comprehensive.pick_hint')}
+              </p>
+              {selectedIds.size > 0 && (
+                <button
+                  onClick={clearSelection}
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3 w-3" />
+                  {t('reports.comprehensive.clear_selection')}
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 max-h-[60vh] overflow-y-auto">
+              {thisWeek.map((p) => {
+                const handle = p.metadata?.author_handle ?? p.metadata?.author_name ?? '—';
+                const isSelected = selectedIds.has(p.id);
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => toggleSelect(p.id)}
+                    className={
+                      'group relative flex flex-col overflow-hidden rounded-lg border text-start transition-all ' +
+                      (isSelected
+                        ? 'border-amber-500 ring-2 ring-amber-500/30 bg-amber-500/5'
+                        : 'border-border bg-background/50 hover:border-muted-foreground/30')
+                    }
+                  >
+                    <div className="relative h-24 bg-accent/40 overflow-hidden">
+                      {p.screenshot_url ? (
+                        <img
+                          src={p.screenshot_url}
+                          alt=""
+                          loading="lazy"
+                          className="h-full w-full object-cover object-top"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
+                          —
+                        </div>
+                      )}
+                      {isSelected && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-amber-500/20">
+                          <Star className="h-6 w-6 fill-amber-500 text-amber-500" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-1.5">
+                      <p className="truncate text-[10px] font-semibold" dir="ltr">{handle}</p>
+                      <p className="truncate text-[9px] text-muted-foreground">
+                        {fmtDateSys(postDate(p), locale, dateSystem)}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ───── PAGE 1 — Executive Summary ───── */}
