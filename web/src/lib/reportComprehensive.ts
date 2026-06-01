@@ -774,7 +774,11 @@ export async function openComprehensivePreview(data: ComprehensiveData): Promise
 
   // Fix print CSS: allow multi-page (remove height/overflow clipping)
   fullHtml = fullHtml.replace(
-    /\.poster\{[^}]*height:100%[^}]*overflow:hidden[^}]*\}/,
+    'html,body{margin:0!important;padding:0!important;background:#faf6f0!important;width:100%!important;height:100%!important;overflow:hidden!important}',
+    'html,body{margin:0!important;padding:0!important;background:#faf6f0!important;width:100%!important}',
+  );
+  fullHtml = fullHtml.replace(
+    '.poster{max-width:100%!important;width:100%!important;height:100%!important;min-height:100%!important;overflow:hidden!important;margin:0!important}',
     '.poster{max-width:100%!important;width:100%!important;margin:0!important}',
   );
 
