@@ -753,30 +753,32 @@ function svgBarChart(bars: Array<{ label: string; value: number }>, width: numbe
 }
 
 export async function openComprehensivePreview(data: ComprehensiveData): Promise<void> {
-  // Page 1: exact poster PDF output
+  // Build poster HTML, then modify it:
+  // 1. Allow multi-page printing (remove height/overflow clipping)
+  // 2. Inject charts after panels section
+  // 3. Replace 6-card grid with highlightCount cards + URLs
   const posterData: PosterData = {
     ...data,
+    highlights: data.extendedHighlights.slice(0, data.highlightCount),
     totalCaptured: data.totalCaptured,
     showLogo: data.showLogo,
   };
   const screenshotUrls = new Map<string, string>();
-  for (const p of data.highlights.slice(0, 6)) {
+  for (const p of posterData.highlights) {
     if (p.screenshot_url) {
       const abs = p.screenshot_url.startsWith('http') ? p.screenshot_url : window.location.origin + p.screenshot_url;
       screenshotUrls.set(p.id, abs);
     }
   }
-  const posterHtml = buildPosterHtml(posterData, screenshotUrls);
+  let fullHtml = buildPosterHtml(posterData, screenshotUrls);
 
-  // Extract poster body content (between <body> and </body>)
-  const bodyMatch = posterHtml.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-  const posterBody = bodyMatch ? bodyMatch[1] : '';
+  // Fix print CSS: allow multi-page (remove height/overflow clipping)
+  fullHtml = fullHtml.replace(
+    /\.poster\{[^}]*height:100%[^}]*overflow:hidden[^}]*\}/,
+    '.poster{max-width:100%!important;width:100%!important;margin:0!important}',
+  );
 
-  // Extract poster styles (between <style> and </style>)
-  const styleMatch = posterHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
-  const posterStyles = styleMatch ? styleMatch[1] : '';
-
-  // Charts data
+  // Charts HTML to inject
   const activeCategories = data.categoryOrder.filter(c => (data.categoryCounts[c] ?? 0) > 0);
   const catChartSegments = activeCategories.map(c => ({
     value: data.categoryCounts[c] ?? 0,
@@ -789,121 +791,69 @@ export async function openComprehensivePreview(data: ComprehensiveData): Promise
   ].filter(s => s.value > 0);
   const dailyBars = data.dailyCounts.map(dc => ({ label: dc.label.split(' ')[0] ?? dc.label, value: dc.count }));
 
-  // Highlights (limited to highlightCount)
+  const chartsHtml = `
+  <div style="padding:0 18px 6px">
+    <div style="height:0.5px;background:linear-gradient(90deg,transparent,#d7a562,transparent);opacity:0.4;margin:6px 0"></div>
+    <div style="font-size:12px;font-weight:700;color:#174766;margin-bottom:6px;display:flex;align-items:center;gap:6px"><span style="width:16px;height:1.5px;background:#d7a562;border-radius:1px"></span>${esc(data.comprehensiveLabels.coverageAnalysis)}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
+      <div style="background:rgba(255,255,255,0.45);border:0.5px solid rgba(215,165,98,0.06);border-radius:8px;padding:8px 10px">
+        <div style="font-size:9px;font-weight:700;color:#174766;margin-bottom:4px">${esc(data.comprehensiveLabels.categoryDistribution)}</div>
+        ${svgDoughnut(catChartSegments, 100)}
+      </div>
+      <div style="background:rgba(255,255,255,0.45);border:0.5px solid rgba(215,165,98,0.06);border-radius:8px;padding:8px 10px">
+        <div style="font-size:9px;font-weight:700;color:#174766;margin-bottom:4px">${esc(data.comprehensiveLabels.originBreakdown)}</div>
+        ${svgDoughnut(originChartSegments, 100)}
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:${data.mediaBreakdown.video > 0 || data.mediaBreakdown.gif > 0 ? '1fr 1fr' : '1fr'};gap:6px">
+      <div style="background:rgba(255,255,255,0.45);border:0.5px solid rgba(215,165,98,0.06);border-radius:8px;padding:8px 10px">
+        <div style="font-size:9px;font-weight:700;color:#174766;margin-bottom:4px">${esc(data.comprehensiveLabels.dailyTrend)}</div>
+        ${svgBarChart(dailyBars, 250, 110)}
+      </div>
+      ${data.mediaBreakdown.video > 0 || data.mediaBreakdown.gif > 0 ? `
+      <div style="background:rgba(255,255,255,0.45);border:0.5px solid rgba(215,165,98,0.06);border-radius:8px;padding:8px 10px">
+        <div style="font-size:9px;font-weight:700;color:#174766;margin-bottom:4px">${esc(data.comprehensiveLabels.mediaBreakdown)}</div>
+        ${svgDoughnut([
+          { value: data.mediaBreakdown.image, color: '#174766', label: data.isRtl ? 'صور' : 'Images' },
+          { value: data.mediaBreakdown.video, color: '#c0392b', label: data.comprehensiveLabels.video },
+          ...(data.mediaBreakdown.gif > 0 ? [{ value: data.mediaBreakdown.gif, color: '#d7a562', label: 'GIF' }] : []),
+          ...(data.mediaBreakdown.none > 0 ? [{ value: data.mediaBreakdown.none, color: '#8a7e72', label: data.isRtl ? 'نص فقط' : 'Text only' }] : []),
+        ].filter(s => s.value > 0), 90)}
+      </div>` : ''}
+    </div>
+  </div>`;
+
+  // Inject charts after the panels section (before the highlights)
+  // The panels end with </div>\n  </div>\n  <div style="padding:6px 18px 10px
+  fullHtml = fullHtml.replace(
+    '</div>\n  </div>\n  <div style="padding:6px 18px 10px',
+    '</div>\n  </div>\n' + chartsHtml + '\n  <div style="padding:6px 18px 10px',
+  );
+
+  // Inject URL links into each highlight card (after the text paragraph)
+  // The poster cards end with: </p>\n      </div>\n    </div>
+  // We need to add a link before the closing </div> of each card body
   const hlPosts = [...data.extendedHighlights]
     .sort((a, b) => new Date(b.posted_at ?? b.captured_at).getTime() - new Date(a.posted_at ?? a.captured_at).getTime())
     .slice(0, data.highlightCount);
+  let cardIdx = 0;
+  fullHtml = fullHtml.replace(
+    /-webkit-box-orient:vertical;margin:1px 0 0">[^<]*<\/p>\s*<\/div>\s*<\/div>/g,
+    (match) => {
+      const post = hlPosts[cardIdx];
+      cardIdx++;
+      if (!post) return match;
+      const link = `<a href="${esc(post.url)}" target="_blank" style="font-size:7px;font-weight:700;color:#174766;text-decoration:none;margin-top:1px">${esc(data.comprehensiveLabels.viewOriginal)}</a>`;
+      return match.replace('</p>\n      </div>\n    </div>', '</p>\n        ' + link + '\n      </div>\n    </div>');
+    },
+  );
 
-  const dir = data.isRtl ? 'rtl' : 'ltr';
-  // Build poster page 1 content (reuse exact poster HTML)
-  // Then add charts + highlights as page 2
-  const fullHtml = `<!DOCTYPE html>
-<html lang="${data.isRtl ? 'ar' : 'en'}" dir="${dir}">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>${esc(data.labels.brand)} — ${data.isRtl ? 'التقرير الشامل' : 'Comprehensive Report'}</title>
-<style>
-${posterStyles}
-body{display:flex!important;flex-direction:column!important;align-items:center!important}
-.p2{width:100%;max-width:595px;background:#faf6f0;margin:0 auto;padding:10px 18px}
-@media print{
-  @page{size:A4 portrait;margin:0}
-  html,body{margin:0!important;padding:0!important;background:#faf6f0!important}
-  .poster{max-width:100%!important;width:100%!important;height:100vh!important;min-height:100vh!important;overflow:hidden!important;margin:0!important}
-  .p2{max-width:100%!important;width:100%!important;height:100vh!important;overflow:hidden!important;margin:0!important;padding:10px 14px!important;page-break-before:always}
-}
-.cp{background:rgba(255,255,255,0.45);border:0.5px solid rgba(215,165,98,0.06);border-radius:6px;padding:6px 8px;margin-bottom:4px}
-.ct{font-size:8px;font-weight:700;color:#174766;margin-bottom:4px;padding-bottom:3px;border-bottom:0.5px solid rgba(215,165,98,0.1);display:flex;align-items:center;gap:3px}
-.ct::before{content:'';width:3px;height:3px;border-radius:50%;background:#d7a562;flex-shrink:0}
-.cr{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:4px}
-.st{font-size:11px;font-weight:700;color:#174766;margin:0 0 3px;display:flex;align-items:center;gap:5px}
-.st::before{content:'';width:12px;height:1.5px;background:#d7a562;border-radius:1px;flex-shrink:0}
-.gd{height:0.5px;background:linear-gradient(90deg,transparent,#d7a562,transparent);opacity:0.4;margin:4px 0}
-.hg{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:4px;flex:1}
-.hc{background:rgba(255,255,255,0.5);border-radius:6px;overflow:hidden;border:0.5px solid rgba(215,165,98,0.06);display:flex;flex-direction:column}
-.ht{height:70px;overflow:hidden;background:#ebe0d0;position:relative}
-.ht img{width:100%;height:100%;object-fit:cover;object-position:top}
-.hb{padding:2px 5px 3px;display:flex;flex-direction:column;gap:0;flex-shrink:0}
-.hh{display:flex;align-items:center;justify-content:space-between;gap:2px}
-.hn{font-size:7px;font-weight:700;color:#1a1511;direction:ltr;text-align:start;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.hd{font-size:6px;color:#8a7e72}
-.htx{font-size:6px;line-height:1.2;color:#1a1511;opacity:0.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;margin:0}
-.hl{font-size:6px;font-weight:700;color:#174766;text-decoration:none}
-.cb{font-size:5px;font-weight:700;padding:0 4px;border-radius:2px;color:#fff;flex-shrink:0}
-.vb{position:absolute;top:2px;${data.isRtl ? 'left' : 'right'}:2px;font-size:5px;font-weight:700;padding:0 3px;border-radius:2px;background:#c0392b;color:#fff}
-</style>
-</head>
-<body>
-
-<!-- PAGE 1: Poster (exact copy) -->
-${posterBody}
-
-<!-- PAGE 2: Charts + Highlights (all on one page) -->
-<div class="p2">
-  <div class="st">${esc(data.comprehensiveLabels.coverageAnalysis)}</div>
-  <div class="gd"></div>
-
-  <div class="cr">
-    <div class="cp">
-      <div class="ct">${esc(data.comprehensiveLabels.categoryDistribution)}</div>
-      ${svgDoughnut(catChartSegments, 90)}
-    </div>
-    <div class="cp">
-      <div class="ct">${esc(data.comprehensiveLabels.originBreakdown)}</div>
-      ${svgDoughnut(originChartSegments, 90)}
-    </div>
-  </div>
-
-  <div class="cr">
-    <div class="cp">
-      <div class="ct">${esc(data.comprehensiveLabels.dailyTrend)}</div>
-      ${svgBarChart(dailyBars, 250, 100)}
-    </div>
-    ${data.mediaBreakdown.video > 0 || data.mediaBreakdown.gif > 0 ? `
-    <div class="cp">
-      <div class="ct">${esc(data.comprehensiveLabels.mediaBreakdown)}</div>
-      ${svgDoughnut([
-        { value: data.mediaBreakdown.image, color: '#174766', label: data.isRtl ? 'صور' : 'Images' },
-        { value: data.mediaBreakdown.video, color: '#c0392b', label: data.comprehensiveLabels.video },
-        ...(data.mediaBreakdown.gif > 0 ? [{ value: data.mediaBreakdown.gif, color: '#d7a562', label: 'GIF' }] : []),
-        ...(data.mediaBreakdown.none > 0 ? [{ value: data.mediaBreakdown.none, color: '#8a7e72', label: data.isRtl ? 'نص فقط' : 'Text only' }] : []),
-      ].filter(s => s.value > 0), 80)}
-    </div>` : `
-    <div class="cp">
-      <div class="ct">${esc(data.comprehensiveLabels.dailyTrend)}</div>
-    </div>`}
-  </div>
-
-  ${hlPosts.length > 0 ? `
-  <div class="gd"></div>
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
-    <div class="st" style="margin:0">${esc(data.labels.highlights)}</div>
-    <span style="font-size:7px;color:#8a7e72">${hlPosts.length} ${data.isRtl ? 'منشورات' : 'posts'}${data.hasManualSelection ? ` (${data.allPosts.length} ${data.isRtl ? 'إجمالي' : 'total'})` : ''}</span>
-  </div>
-  <div class="hg">
-    ${hlPosts.map(p => {
-      const handle = p.metadata?.author_handle ?? '';
-      const text = (p.metadata?.text ?? '').slice(0, 60);
-      const dateLabel = data.datePostedLabel(p);
-      const imgUrl = p.screenshot_url ? (p.screenshot_url.startsWith('http') ? p.screenshot_url : window.location.origin + p.screenshot_url) : null;
-      const cat = p.origin === 'company' ? (p.company_category ?? 'unclassified') as Category : null;
-      const isVideo = p.latest_capture?.media === 'video';
-      return `<div class="hc">
-        <div class="ht">${imgUrl ? `<img src="${esc(imgUrl)}" crossorigin="anonymous"/>` : ''}${isVideo ? `<div class="vb">▶ ${esc(data.comprehensiveLabels.video)}</div>` : ''}</div>
-        <div class="hb">
-          <div class="hh"><span class="hn">${esc(handle || p.metadata?.author_name || '—')}</span>${cat ? `<span class="cb" style="background:#${CAT_HEX[cat]}">${esc(data.categoryLabels[cat])}</span>` : ''}</div>
-          <span class="hd">${esc(dateLabel)}</span>
-          <p class="htx">${esc(text)}</p>
-          <a href="${esc(p.url)}" target="_blank" class="hl">${esc(data.comprehensiveLabels.viewOriginal)}</a>
-        </div>
-      </div>`;
-    }).join('')}
-  </div>` : ''}
-</div>
-
-</body>
-</html>`;
+  // Update grid to support more than 2 rows
+  const hlRows = Math.ceil(hlPosts.length / 3);
+  fullHtml = fullHtml.replace(
+    'grid-template-rows:repeat(2,1fr)',
+    'grid-template-rows:repeat(' + hlRows + ',1fr)',
+  );
 
   const win = window.open('', '_blank');
   if (!win) return;
