@@ -183,11 +183,6 @@ function addExecSummarySlide(pptx: PptxGenJS, d: ComprehensiveData): void {
     fontSize: 12, color: TEXT, fontFace: FONT,
   });
 
-  // Footer
-  s.addText(d.comprehensiveLabels.confidential, {
-    x: 0.5, y: 6.90, w: 12.33, h: 0.30,
-    fontSize: 8, color: MUTED, align: 'center', fontFace: FONT,
-  });
 }
 
 // ───── Slide 2: Media Coverage Analysis ─────
@@ -306,11 +301,6 @@ function addAnalysisSlide(pptx: PptxGenJS, d: ComprehensiveData): void {
     });
   }
 
-  // Footer
-  s.addText(d.comprehensiveLabels.confidential, {
-    x: 0.5, y: 6.90, w: 12.33, h: 0.30,
-    fontSize: 8, color: MUTED, align: 'center', fontFace: FONT,
-  });
 }
 
 // ───── Highlights slide (reused for slides 3 & 4) ─────
@@ -433,11 +423,6 @@ async function addHighlightsSlide(
     });
   });
 
-  // Footer
-  s.addText(d.comprehensiveLabels.confidential, {
-    x: 0.5, y: 6.90, w: 12.33, h: 0.30,
-    fontSize: 8, color: MUTED, align: 'center', fontFace: FONT,
-  });
 }
 
 // ───── Slide 5: Summary & Statistics ─────
@@ -525,11 +510,6 @@ function addStatisticsSlide(pptx: PptxGenJS, d: ComprehensiveData): void {
     }
   });
 
-  // Footer
-  s.addText(d.comprehensiveLabels.confidential, {
-    x: 0.5, y: 6.90, w: 12.33, h: 0.30,
-    fontSize: 8, color: MUTED, align: 'center', fontFace: FONT,
-  });
 }
 
 // ───── Detail slides: 2 posts per slide, full text ─────
@@ -684,11 +664,6 @@ async function addDetailSlides(
       });
     });
 
-    // Footer
-    s.addText(d.comprehensiveLabels.confidential, {
-      x: 0.5, y: 6.90, w: 12.33, h: 0.30,
-      fontSize: 8, color: MUTED, align: 'center', fontFace: FONT,
-    });
   }
 }
 
@@ -870,9 +845,59 @@ function buildComprehensiveHtml(d: ComprehensiveData): string {
     </div>`;
   }
 
-  // ── Origin / media stats ──
-  const indPct = d.total > 0 ? Math.round((d.individualCount / d.total) * 100) : 0;
-  const comPct = d.total > 0 ? Math.round((d.companyCount / d.total) * 100) : 0;
+  // ── SVG Doughnut chart helper ──
+  function svgDoughnut(segments: Array<{ value: number; color: string; label: string }>, size: number): string {
+    const total = segments.reduce((s, seg) => s + seg.value, 0);
+    if (total === 0) return '';
+    const cx = size / 2;
+    const cy = size / 2;
+    const r = size * 0.35;
+    const strokeW = size * 0.12;
+    const circumference = 2 * Math.PI * r;
+    let offset = 0;
+    let arcs = '';
+    let legendHtml = '';
+    for (const seg of segments) {
+      const pct = seg.value / total;
+      const dashLen = pct * circumference;
+      arcs += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${seg.color}" stroke-width="${strokeW}" stroke-dasharray="${dashLen} ${circumference - dashLen}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${cx} ${cy})"/>`;
+      offset += dashLen;
+      legendHtml += `<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px"><span style="width:8px;height:8px;border-radius:50%;background:${seg.color};flex-shrink:0"></span><span style="font-size:8px;color:#1a1511">${esc(seg.label)}</span><span style="font-size:8px;font-weight:700;color:#1a1511;margin-inline-start:auto">${seg.value} (${Math.round(pct * 100)}%)</span></div>`;
+    }
+    return `<div style="display:flex;align-items:center;gap:10px"><svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${arcs}<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="central" style="font-size:${size * 0.14}px;font-weight:700;fill:#1a1511">${total}</text></svg><div style="flex:1">${legendHtml}</div></div>`;
+  }
+
+  // ── SVG Bar chart helper ──
+  function svgBarChart(bars: Array<{ label: string; value: number }>, width: number, height: number): string {
+    if (bars.length === 0) return '';
+    const maxVal = Math.max(1, ...bars.map(b => b.value));
+    const barW = Math.min(30, (width - 20) / bars.length * 0.7);
+    const gap = (width - 20 - barW * bars.length) / Math.max(1, bars.length - 1);
+    const chartH = height - 30;
+    let barsHtml = '';
+    for (let i = 0; i < bars.length; i++) {
+      const b = bars[i]!;
+      const h = Math.max(2, (b.value / maxVal) * chartH);
+      const x = 10 + i * (barW + gap);
+      const y = chartH - h;
+      barsHtml += `<rect x="${x}" y="${y}" width="${barW}" height="${h}" rx="2" fill="#d7a562"/>`;
+      barsHtml += `<text x="${x + barW / 2}" y="${y - 3}" text-anchor="middle" style="font-size:7px;fill:#1a1511;font-weight:700">${b.value}</text>`;
+      barsHtml += `<text x="${x + barW / 2}" y="${chartH + 12}" text-anchor="middle" style="font-size:6px;fill:#8a7e72">${esc(b.label)}</text>`;
+    }
+    return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><line x1="10" y1="${chartH}" x2="${width - 10}" y2="${chartH}" stroke="#ebe0d0" stroke-width="0.5"/>${barsHtml}</svg>`;
+  }
+
+  // ── Build chart HTML ──
+  const catChartSegments = activeCategories.map(c => ({
+    value: d.categoryCounts[c] ?? 0,
+    color: catColorCss(c),
+    label: d.categoryLabels[c],
+  }));
+  const originChartSegments = [
+    { value: d.individualCount, color: '#70A3C2', label: d.comprehensiveLabels.individual },
+    { value: d.companyCount, color: '#d7a562', label: d.comprehensiveLabels.company },
+  ].filter(s => s.value > 0);
+  const dailyBars = d.dailyCounts.map(dc => ({ label: dc.label.split(' ')[0] ?? dc.label, value: dc.count }));
 
   return `<!DOCTYPE html>
 <html lang="${d.isRtl ? 'ar' : 'en'}" dir="${dir}">
@@ -884,7 +909,7 @@ function buildComprehensiveHtml(d: ComprehensiveData): string {
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap');
 *{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 body{font-family:'Cairo',sans-serif;background:#f5ede3;color:#1a1511;line-height:1.4}
-.page{width:210mm;min-height:297mm;background:#faf6f0;margin:0 auto 8px;padding:14mm 16mm;position:relative}
+.page{width:210mm;min-height:297mm;background:#faf6f0;margin:0 auto 8px;padding:14mm 16mm;position:relative;display:flex;flex-direction:column}
 @media print{
   @page{size:A4 portrait;margin:0}
   html,body{margin:0!important;padding:0!important;background:#faf6f0!important}
@@ -893,74 +918,38 @@ body{font-family:'Cairo',sans-serif;background:#f5ede3;color:#1a1511;line-height
   .no-print{display:none!important}
 }
 
-/* ── Typography ── */
 h1{font-size:20px;font-weight:800;color:#1a1511;margin:0}
 h2{font-size:16px;font-weight:700;color:#174766;margin:16px 0 8px;display:flex;align-items:center;gap:6px}
 h2::before{content:'';width:14px;height:2px;background:#d7a562;border-radius:1px;flex-shrink:0}
-h3{font-size:12px;font-weight:700;color:#174766;margin:10px 0 6px}
 .subtitle{font-size:10px;color:#8a7e72;margin-top:2px}
 .gold{color:#d7a562}
 .divider{height:1px;background:linear-gradient(90deg,transparent,#d7a562,transparent);opacity:0.4;margin:10px 0}
-
-/* ── Header ── */
 .header{display:flex;align-items:start;justify-content:space-between;gap:12px;margin-bottom:6px}
 .date-card{background:rgba(255,255,255,0.5);border:0.5px solid rgba(215,165,98,0.1);border-radius:8px;padding:6px 14px;text-align:start}
 .date-primary{font-size:13px;font-weight:700;color:#1a1511}
 .date-secondary{font-size:10px;color:#8a7e72}
-
-/* ── KPI tiles ── */
 .kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:10px 0}
 .kpi{background:rgba(255,255,255,0.5);border:0.5px solid rgba(215,165,98,0.06);border-radius:8px;padding:8px 6px;text-align:center}
 .kpi-val{font-size:20px;font-weight:700;line-height:1}
 .kpi-label{font-size:8px;font-weight:600;color:#8a7e72;margin-top:4px}
-
-/* ── Panels ── */
 .panels{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:8px 0}
 .panel{background:rgba(255,255,255,0.45);border:0.5px solid rgba(215,165,98,0.06);border-radius:8px;padding:8px 10px}
 .panel-title{font-size:10px;font-weight:700;color:#174766;margin-bottom:6px;padding-bottom:4px;border-bottom:0.5px solid rgba(215,165,98,0.1);display:flex;align-items:center;gap:4px}
 .panel-title::before{content:'';width:4px;height:4px;border-radius:50%;background:#d7a562;flex-shrink:0}
-
-/* ── Bar rows ── */
 .bar-row{display:flex;align-items:center;gap:4px;margin-bottom:3px}
 .bar-label{width:55px;font-size:9px;font-weight:600;color:#8a7e72;flex-shrink:0}
 .bar-track{flex:1;height:6px;border-radius:3px;background:#ebe0d0;overflow:hidden}
 .bar-fill{height:100%;border-radius:3px}
 .bar-val{width:20px;font-size:10px;font-weight:700;color:#1a1511;text-align:end;flex-shrink:0}
 .bar-pct{width:24px;font-size:8px;color:#8a7e72;text-align:end;flex-shrink:0}
-
-/* ── Voice rows ── */
 .voice-row{display:flex;align-items:center;gap:5px;margin-bottom:3px}
 .voice-num{width:16px;height:16px;border-radius:50%;background:rgba(215,165,98,0.1);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#d7a562;flex-shrink:0}
 .voice-handle{flex:1;font-size:10px;font-weight:600;color:#1a1511;direction:ltr;text-align:start;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .voice-count{font-size:11px;font-weight:700;color:#1a1511;flex-shrink:0}
-
-/* ── Category badge ── */
 .cat-badge{font-size:7px;font-weight:700;padding:1px 6px;border-radius:3px;color:#fff;flex-shrink:0}
-
-/* ── Video badge ── */
-.video-badge{position:absolute;top:4px;${d.isRtl ? 'left' : 'right'}:4px;font-size:7px;font-weight:700;padding:1px 6px;border-radius:3px;background:#c0392b;color:#fff}
 .video-badge-sm{position:absolute;bottom:4px;${d.isRtl ? 'left' : 'right'}:4px;font-size:7px;font-weight:700;padding:1px 5px;border-radius:3px;background:#c0392b;color:#fff}
-
-/* ── Origin stats ── */
-.stats-row{display:flex;gap:12px;margin:8px 0}
-.stat-item{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600;color:#1a1511}
-.stat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-
-/* ── Highlight cards (grid) ── */
-.highlights-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.highlight-card{background:rgba(255,255,255,0.5);border:0.5px solid rgba(215,165,98,0.06);border-radius:8px;overflow:hidden;break-inside:avoid}
-.card-thumb{position:relative;height:90px;background:#ebe0d0;overflow:hidden}
-.card-img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block}
-.card-img-empty{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:14px;opacity:0.15}
-.card-body{padding:5px 8px 6px;display:flex;flex-direction:column;gap:1px}
-.card-header{display:flex;align-items:center;justify-content:space-between;gap:3px}
-.card-handle{font-size:9px;font-weight:700;color:#1a1511;direction:ltr;text-align:start;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.card-date{font-size:8px;color:#8a7e72}
-.card-text{font-size:8px;line-height:1.3;color:#1a1511;opacity:0.6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;margin:1px 0 0}
-.card-link{font-size:7px;font-weight:700;color:#174766;text-decoration:none;margin-top:2px}
-.card-link:hover{text-decoration:underline}
-
-/* ── All posts list ── */
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+.chart-panel{background:rgba(255,255,255,0.45);border:0.5px solid rgba(215,165,98,0.06);border-radius:8px;padding:8px 10px}
 .post-row{display:flex;gap:10px;padding:8px 0;border-bottom:0.5px solid rgba(215,165,98,0.1);break-inside:avoid;page-break-inside:avoid}
 .post-num{width:24px;height:24px;border-radius:6px;background:#d7a562;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
 .post-thumb{width:130px;height:90px;border-radius:6px;overflow:hidden;flex-shrink:0;background:#ebe0d0;position:relative}
@@ -971,7 +960,8 @@ h3{font-size:12px;font-weight:700;color:#174766;margin:10px 0 6px}
 .post-handle{font-size:11px;font-weight:700;color:#1a1511;direction:ltr}
 .post-date{font-size:9px;color:#8a7e72;margin-inline-start:auto}
 .post-text{font-size:9px;line-height:1.4;color:#1a1511;margin:3px 0}
-.footer{text-align:center;font-size:8px;color:#8a7e72;margin-top:auto;padding-top:8px}
+.card-link{font-size:7px;font-weight:700;color:#174766;text-decoration:none;margin-top:2px}
+.card-link:hover{text-decoration:underline}
 </style>
 </head>
 <body>
@@ -999,6 +989,11 @@ h3{font-size:12px;font-weight:700;color:#174766;margin:10px 0 6px}
     </div>`).join('')}
   </div>
 
+  <div style="background:rgba(255,255,255,0.4);border-radius:6px;padding:8px 10px;margin:6px 0">
+    <div style="font-size:9px;font-weight:700;color:#d7a562;margin-bottom:2px">${esc(d.labels.headline)}</div>
+    <div style="font-size:10px;color:#1a1511">${esc(d.headline)}</div>
+  </div>
+
   <div class="panels">
     <div class="panel">
       <div class="panel-title">${esc(d.labels.categories)}</div>
@@ -1013,34 +1008,58 @@ h3{font-size:12px;font-weight:700;color:#174766;margin:10px 0 6px}
       ${hashtagsHtml}
     </div>
   </div>
-
-  <div class="stats-row">
-    <div class="stat-item"><span class="stat-dot" style="background:#70A3C2"></span>${esc(d.comprehensiveLabels.individual)}: ${d.individualCount} (${indPct}%)</div>
-    <div class="stat-item"><span class="stat-dot" style="background:#d7a562"></span>${esc(d.comprehensiveLabels.company)}: ${d.companyCount} (${comPct}%)</div>
-    ${d.mediaBreakdown.video > 0 ? `<div class="stat-item"><span class="stat-dot" style="background:#c0392b"></span>${esc(d.comprehensiveLabels.video)}: ${d.mediaBreakdown.video}</div>` : ''}
-  </div>
-
-  <div class="divider"></div>
-  <div style="background:rgba(255,255,255,0.4);border-radius:6px;padding:8px 10px;margin:4px 0">
-    <div style="font-size:9px;font-weight:700;color:#d7a562;margin-bottom:2px">${esc(d.labels.headline)}</div>
-    <div style="font-size:10px;color:#1a1511">${esc(d.headline)}</div>
-  </div>
-
-  ${d.extendedHighlights.length > 0 ? `
-  <h2>${esc(d.labels.highlights)}</h2>
-  <div class="highlights-grid">${highlightsHtml}</div>
-  ` : ''}
-
-  <div class="footer">${esc(d.comprehensiveLabels.confidential)}</div>
 </div>
 
-<!-- ═══ PAGES 2+: All Posts ═══ -->
+<!-- ═══ PAGE 2: Charts & Analysis ═══ -->
+<div class="page">
+  <h2>${esc(d.comprehensiveLabels.coverageAnalysis)}</h2>
+  <div class="divider"></div>
+
+  <div class="charts-row">
+    <div class="chart-panel">
+      <div class="panel-title">${esc(d.comprehensiveLabels.categoryDistribution)}</div>
+      ${svgDoughnut(catChartSegments, 120)}
+    </div>
+    <div class="chart-panel">
+      <div class="panel-title">${esc(d.comprehensiveLabels.originBreakdown)}</div>
+      ${svgDoughnut(originChartSegments, 120)}
+    </div>
+  </div>
+
+  <div class="chart-panel" style="margin:8px 0">
+    <div class="panel-title">${esc(d.comprehensiveLabels.dailyTrend)}</div>
+    ${svgBarChart(dailyBars, 500, 140)}
+  </div>
+
+  ${d.mediaBreakdown.video > 0 || d.mediaBreakdown.gif > 0 ? `
+  <div class="chart-panel" style="margin:8px 0">
+    <div class="panel-title">${esc(d.comprehensiveLabels.mediaBreakdown)}</div>
+    ${svgDoughnut([
+      { value: d.mediaBreakdown.image, color: '#174766', label: d.isRtl ? 'صور' : 'Images' },
+      { value: d.mediaBreakdown.video, color: '#c0392b', label: d.comprehensiveLabels.video },
+      ...(d.mediaBreakdown.gif > 0 ? [{ value: d.mediaBreakdown.gif, color: '#d7a562', label: 'GIF' }] : []),
+      ...(d.mediaBreakdown.none > 0 ? [{ value: d.mediaBreakdown.none, color: '#8a7e72', label: d.isRtl ? 'نص فقط' : 'Text only' }] : []),
+    ].filter(s => s.value > 0), 100)}
+  </div>` : ''}
+
+  <div class="panels" style="margin-top:10px">
+    <div class="panel" style="grid-column:span 2">
+      <div class="panel-title">${esc(d.labels.topHashtags)}</div>
+      ${hashtagsHtml}
+    </div>
+    <div class="panel">
+      <div class="panel-title">${esc(d.labels.topVoices)}</div>
+      ${voicesHtml}
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PAGES 3+: All Posts ═══ -->
 <div class="page">
   <h2>${esc(d.comprehensiveLabels.allCoverage)}</h2>
   <div class="subtitle" style="margin-bottom:8px">${sorted.length} ${d.isRtl ? 'منشور' : 'posts'} · ${esc(primaryDate)}</div>
   <div class="divider"></div>
   ${allPostsHtml}
-  <div class="footer">${esc(d.comprehensiveLabels.confidential)}</div>
 </div>
 
 </body>
